@@ -46,11 +46,11 @@ export default function Home() {
             <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
           </Link>
           <div className="flex gap-3 items-center">
+            <Link to="/turtle-points" className="text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
+              🗺️ Noktalar
+            </Link>
             {user ? (
               <>
-              <Link to="/turtle-points" className="text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-  🗺️ Noktalar
-</Link>
                 <Link to="/messages" className="text-gray-500 hover:text-gray-800 text-sm font-medium transition">
                   💬 Mesajlar
                 </Link>
@@ -234,6 +234,7 @@ export default function Home() {
           </div>
           <div className="flex gap-6">
             <Link to="/turtle-points" className="hover:text-emerald-600 transition">🗺️ TurtleNoktalar</Link>
+            <Link to="/apply-point" className="hover:text-emerald-600 transition">🏪 Nokta Ol</Link>
           </div>
           <p>© 2026 TurtleShopping. Tüm hakları saklıdır.</p>
         </div>

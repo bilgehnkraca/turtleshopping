@@ -11,6 +11,7 @@ import Conversation from './pages/Conversation'
 import ProfilePage from './pages/Profile'
 import Messages from './pages/Messages'
 import TurtlePoints from './pages/TurtlePoints'
+import ApplyPoint from './pages/ApplyPoint'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/profile/:id" element={<ProfilePage />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/turtle-points" element={<TurtlePoints />} />
+        <Route path="/apply-point" element={<ApplyPoint />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
