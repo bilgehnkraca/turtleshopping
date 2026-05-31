@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { cities } from '../data/cities'
 import type { Category } from '../types'
 
 export default function CreateListing() {
@@ -140,10 +141,15 @@ export default function CreateListing() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Şehir</label>
-            <input value={city} onChange={e => setCity(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Şehir</label>
+  <select value={city} onChange={e => setCity(e.target.value)}
+    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+    <option value="">Şehir seç</option>
+    {cities.map(c => (
+      <option key={c} value={c}>{c}</option>
+    ))}
+  </select>
+</div>
 
           <button onClick={handleSubmit} disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50 mt-2">
