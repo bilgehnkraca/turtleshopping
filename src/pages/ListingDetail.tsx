@@ -123,6 +123,11 @@ export default function ListingDetail() {
       await supabase.from('listings').update({ verification_id: vData.id }).eq('id', id)
       setVerification(vData)
       setShowVerifyModal(false)
+
+      // Email bildirimi gönder
+      await supabase.functions.invoke('notify-turtle-point', {
+        body: { verification_id: vData.id }
+      })
     }
     setVerifyLoading(false)
   }
@@ -169,7 +174,6 @@ export default function ListingDetail() {
           )}
 
           <div className="p-6">
-            {/* Doğrulama rozeti */}
             {isVerified && (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
                 <span className="text-emerald-600 text-xl">✅</span>
@@ -235,7 +239,6 @@ export default function ListingDetail() {
               </div>
             </Link>
 
-            {/* Satıcı butonları */}
             {isOwner && !verification && (
               <button onClick={() => setShowVerifyModal(true)}
                 className="w-full bg-emerald-500 text-white py-3 rounded-xl font-medium hover:bg-emerald-600 transition text-sm mb-3">
@@ -243,7 +246,6 @@ export default function ListingDetail() {
               </button>
             )}
 
-            {/* Alıcı butonu */}
             {!isOwner && (
               <button onClick={handleContact}
                 className="w-full bg-emerald-500 text-white py-3 rounded-xl font-medium hover:bg-emerald-600 transition text-sm">
@@ -258,7 +260,6 @@ export default function ListingDetail() {
         </div>
       </div>
 
-      {/* Doğrulama Modal */}
       {showVerifyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
