@@ -48,8 +48,11 @@ export default function Home() {
           <div className="flex gap-3 items-center">
             {user ? (
               <>
-                <Link to="/messages" className="text-gray-500 hover:text-gray-800 text-sm font-medium transition flex items-center gap-1">
+                <Link to="/messages" className="text-gray-500 hover:text-gray-800 text-sm font-medium transition">
                   💬 Mesajlar
+                </Link>
+                <Link to={`/profile/${user.id}`} className="text-gray-500 hover:text-gray-800 text-sm font-medium transition">
+                  👤 Profilim
                 </Link>
                 <Link to="/create-listing">
                   <button className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-600 transition shadow-sm">
