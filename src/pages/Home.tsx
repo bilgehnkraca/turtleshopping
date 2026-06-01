@@ -114,7 +114,6 @@ export default function Home() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
 
-        {/* Arama aktifse filtre barı göster */}
         {(search || selectedCategory || selectedCity) && (
           <div className="flex flex-wrap gap-3 mb-6">
             <input
@@ -170,7 +169,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Seçili kategori başlığı */}
         {selectedCategory && (
           <div className="flex items-center gap-2 mb-4">
             <span className="text-gray-700 font-semibold text-lg">
@@ -184,12 +182,10 @@ export default function Home() {
           </div>
         )}
 
-        {/* Son ilanlar başlığı */}
         {!selectedCategory && !search && !selectedCity && (
           <h2 className="text-lg font-bold text-gray-700 mb-4">Son İlanlar</h2>
         )}
 
-        {/* İlanlar */}
         {loading ? (
           <div className="text-center py-20 text-gray-400">Yükleniyor...</div>
         ) : listings.length === 0 ? (
@@ -214,6 +210,11 @@ export default function Home() {
                   <div className="p-3">
                     <h3 className="font-semibold text-gray-800 text-sm truncate">{listing.title}</h3>
                     <p className="text-emerald-600 font-bold mt-1 text-base">{listing.price.toLocaleString('tr-TR')} ₺</p>
+                    {(listing as any).verified && (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium mt-1">
+                        ✅ TurtleGüvence
+                      </span>
+                    )}
                     <p className="text-xs text-gray-400 mt-1 truncate">
                       {(listing.categories as any)?.icon} {(listing.categories as any)?.name} · {(listing.profiles as any)?.city || 'Türkiye'}
                     </p>
