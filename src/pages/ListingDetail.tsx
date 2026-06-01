@@ -124,7 +124,6 @@ export default function ListingDetail() {
       setVerification(vData)
       setShowVerifyModal(false)
 
-      // Email bildirimi gönder
       await supabase.functions.invoke('notify-turtle-point', {
         body: { verification_id: vData.id }
       })
@@ -253,8 +252,12 @@ export default function ListingDetail() {
               </button>
             )}
 
-            {isOwner && verification && (
-              <p className="text-center text-sm text-gray-400">Bu ilan size ait.</p>
+            {isOwner && (
+              <Link to={`/edit-listing/${id}`}>
+                <button className="w-full mt-3 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition text-sm">
+                  ✏️ İlanı Düzenle
+                </button>
+              </Link>
             )}
           </div>
         </div>
