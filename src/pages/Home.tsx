@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import { cities } from '../data/cities'
 
 export default function Home() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, isPointOwner } = useAuth()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -51,6 +51,11 @@ export default function Home() {
             </Link>
             {user ? (
               <>
+                {isPointOwner && (
+                  <Link to="/point-panel" className="text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
+                    🏪 Nokta Paneli
+                  </Link>
+                )}
                 <Link to="/messages" className="text-gray-500 hover:text-gray-800 text-sm font-medium transition">
                   💬 Mesajlar
                 </Link>

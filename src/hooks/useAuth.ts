@@ -6,20 +6,22 @@ import type { Profile } from '../types'
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [isPointOwner, setIsPointOwner] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) fetchProfile(session.user)
       else setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
+      if (session?.user) fetchProfile(session.user)
       else {
         setProfile(null)
+        setIsPointOwner(false)
         setLoading(false)
       }
     })
@@ -27,13 +29,22 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchProfile(userId: string) {
+  async function fetchProfile(user: User) {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
     setProfile(data)
+
+    // Nokta sahibi mi kontrol et
+    const { data: point } = await supabase
+      .from('turtle_points')
+      .select('id')
+      .eq('email', user.email)
+      .eq('is_active', true)
+      .maybeSingle()
+    setIsPointOwner(!!point)
     setLoading(false)
   }
 
@@ -41,5 +52,5 @@ export function useAuth() {
     await supabase.auth.signOut()
   }
 
-  return { user, profile, loading, signOut }
+  return { user, profile, loading, signOut, isPointOwner }
 }
