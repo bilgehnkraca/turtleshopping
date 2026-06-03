@@ -10,6 +10,14 @@ const conditionLabels: Record<string, string> = {
   fair: 'Makul',
 }
 
+const reportReasons: Record<string, string> = {
+  dolandirici: '🚨 Dolandırıcı',
+  yaniltici: '⚠️ Yanıltıcı İlan',
+  kopya: '📋 Kopya İlan',
+  uygunsuz: '🚫 Uygunsuz İçerik',
+  diger: '📝 Diğer',
+}
+
 export default function ListingDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -22,6 +30,12 @@ export default function ListingDetail() {
   const [selectedPoint, setSelectedPoint] = useState('')
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [verifyLoading, setVerifyLoading] = useState(false)
+  const [activeImage, setActiveImage] = useState(0)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+  const [reportDescription, setReportDescription] = useState('')
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportSent, setReportSent] = useState(false)
 
   useEffect(() => {
     fetchListing()
@@ -123,12 +137,46 @@ export default function ListingDetail() {
       await supabase.from('listings').update({ verification_id: vData.id }).eq('id', id)
       setVerification(vData)
       setShowVerifyModal(false)
-
       await supabase.functions.invoke('notify-turtle-point', {
         body: { verification_id: vData.id }
       })
     }
     setVerifyLoading(false)
+  }
+
+  async function handleReport() {
+    if (!currentUser) { navigate('/login'); return }
+    if (!reportReason) return
+    setReportLoading(true)
+
+    await supabase.from('listing_reports').insert({
+      listing_id: id,
+      reporter_id: currentUser,
+      reason: reportReason,
+      description: reportDescription,
+    })
+
+    setReportSent(true)
+    setReportLoading(false)
+    setTimeout(() => {
+      setShowReportModal(false)
+      setReportSent(false)
+      setReportReason('')
+      setReportDescription('')
+    }, 2000)
+  }
+
+  function shareListing() {
+    if (navigator.share) {
+      navigator.share({
+        title: listing?.title,
+        text: `${listing?.title} - ${listing?.price.toLocaleString('tr-TR')} ₺`,
+        url: window.location.href,
+      })
+    } else {
+      navigator.clipboard.writeText(window.location.href)
+      alert('Link kopyalandı!')
+    }
   }
 
   if (loading) return (
@@ -148,6 +196,7 @@ export default function ListingDetail() {
   const isOwner = currentUser === listing.user_id
   const isVerified = (listing as any).verified === true
   const verificationPending = verification && verification.status === 'pending'
+  const images = listing.images || []
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -163,9 +212,24 @@ export default function ListingDetail() {
 
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          {listing.images && listing.images.length > 0 ? (
-            <img src={listing.images[0]} alt={listing.title}
-              className="w-full max-h-96 object-cover" />
+
+          {/* Fotoğraf Galerisi */}
+          {images.length > 0 ? (
+            <div>
+              <img src={images[activeImage]} alt={listing.title}
+                className="w-full max-h-96 object-cover" />
+              {images.length > 1 && (
+                <div className="flex gap-2 p-3 overflow-x-auto">
+                  {images.map((img, i) => (
+                    <img key={i} src={img} alt={`${listing.title} ${i+1}`}
+                      onClick={() => setActiveImage(i)}
+                      className={`w-16 h-16 object-cover rounded-lg cursor-pointer flex-shrink-0 transition ${
+                        activeImage === i ? 'ring-2 ring-emerald-500' : 'opacity-60 hover:opacity-100'
+                      }`} />
+                  ))}
+                </div>
+              )}
+            </div>
           ) : (
             <div className="w-full h-48 bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center text-6xl">
               {category?.icon || '📦'}
@@ -196,11 +260,14 @@ export default function ListingDetail() {
             )}
 
             <div className="flex justify-between items-start mb-4">
-              <h1 className="text-2xl font-bold text-gray-800">{listing.title}</h1>
-              <button onClick={toggleFavorite}
-                className={`text-2xl transition ${isFavorited ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}>
-                {isFavorited ? '❤️' : '🤍'}
-              </button>
+              <h1 className="text-2xl font-bold text-gray-800 flex-1 mr-4">{listing.title}</h1>
+              <div className="flex gap-2">
+                <button onClick={shareListing} className="text-gray-400 hover:text-emerald-600 transition text-xl">🔗</button>
+                <button onClick={toggleFavorite}
+                  className={`text-2xl transition ${isFavorited ? 'text-red-500' : 'text-gray-300 hover:text-red-400'}`}>
+                  {isFavorited ? '❤️' : '🤍'}
+                </button>
+              </div>
             </div>
 
             <p className="text-3xl font-bold text-emerald-600 mb-4">{listing.price.toLocaleString('tr-TR')} ₺</p>
@@ -246,10 +313,19 @@ export default function ListingDetail() {
             )}
 
             {!isOwner && (
-              <button onClick={handleContact}
-                className="w-full bg-emerald-500 text-white py-3 rounded-xl font-medium hover:bg-emerald-600 transition text-sm">
-                Satıcıyla İletişime Geç
-              </button>
+              <>
+                <button onClick={handleContact}
+                  className="w-full bg-emerald-500 text-white py-3 rounded-xl font-medium hover:bg-emerald-600 transition text-sm mb-3">
+                  Satıcıyla İletişime Geç
+                </button>
+                <button onClick={() => {
+                  if (!currentUser) { navigate('/login'); return }
+                  setShowReportModal(true)
+                }}
+                  className="w-full bg-red-50 text-red-500 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition">
+                  🚨 İlanı Şikayet Et
+                </button>
+              </>
             )}
 
             {isOwner && (
@@ -263,15 +339,14 @@ export default function ListingDetail() {
         </div>
       </div>
 
+      {/* Doğrulama Modal */}
       {showVerifyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
             <h2 className="text-xl font-bold text-gray-800 mb-2">🛡️ TurtleGüvence</h2>
             <p className="text-gray-500 text-sm mb-6">
-              Ürününüzü doğrulatmak için bir TurtleNokta seçin. Seçtiğiniz noktaya ürünü götürün,
-              uzmanlarımız kontrol edecek.
+              Ürününüzü doğrulatmak için bir TurtleNokta seçin.
             </p>
-
             <label className="block text-sm font-medium text-gray-700 mb-2">TurtleNokta Seç</label>
             <select value={selectedPoint} onChange={e => setSelectedPoint(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white mb-4">
@@ -280,7 +355,6 @@ export default function ListingDetail() {
                 <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
               ))}
             </select>
-
             <div className="flex gap-3">
               <button onClick={handleVerificationRequest} disabled={!selectedPoint || verifyLoading}
                 className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-medium hover:bg-emerald-600 transition disabled:opacity-50 text-sm">
@@ -291,6 +365,58 @@ export default function ListingDetail() {
                 İptal
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Şikayet Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            {reportSent ? (
+              <div className="text-center py-4">
+                <p className="text-4xl mb-3">✅</p>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Şikayetiniz Alındı</h2>
+                <p className="text-gray-500 text-sm">Ekibimiz inceleyecek ve gerekli önlemi alacak.</p>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-gray-800 mb-2">🚨 İlanı Şikayet Et</h2>
+                <p className="text-gray-500 text-sm mb-4">Şikayet sebebini seçin:</p>
+
+                <div className="flex flex-col gap-2 mb-4">
+                  {Object.entries(reportReasons).map(([key, label]) => (
+                    <button key={key} onClick={() => setReportReason(key)}
+                      className={`px-4 py-3 rounded-xl text-sm font-medium text-left transition ${
+                        reportReason === key
+                          ? 'bg-red-50 border-2 border-red-300 text-red-700'
+                          : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
+                      }`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  value={reportDescription}
+                  onChange={e => setReportDescription(e.target.value)}
+                  placeholder="Detay eklemek ister misiniz? (opsiyonel)"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-4"
+                />
+
+                <div className="flex gap-3">
+                  <button onClick={handleReport} disabled={!reportReason || reportLoading}
+                    className="flex-1 bg-red-500 text-white py-3 rounded-xl font-medium hover:bg-red-600 transition disabled:opacity-50 text-sm">
+                    {reportLoading ? 'Gönderiliyor...' : 'Şikayet Gönder'}
+                  </button>
+                  <button onClick={() => setShowReportModal(false)}
+                    className="px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-500 hover:text-gray-800 transition">
+                    İptal
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

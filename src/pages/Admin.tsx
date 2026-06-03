@@ -6,9 +6,10 @@ const ADMIN_EMAIL = 'bilgekral04@gmail.com'
 
 export default function Admin() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'applications' | 'verifications'>('applications')
+  const [activeTab, setActiveTab] = useState<'applications' | 'verifications' | 'reports'>('applications')
   const [applications, setApplications] = useState<any[]>([])
   const [verifications, setVerifications] = useState<any[]>([])
+  const [reports, setReports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -32,13 +33,18 @@ export default function Admin() {
       .select('*, listings(title, price, images), turtle_points(name, city)')
       .order('created_at', { ascending: false })
 
+    const { data: reps } = await supabase
+      .from('listing_reports')
+      .select('*, listings(title, price, images), profiles!listing_reports_reporter_id_fkey(username, full_name)')
+      .order('created_at', { ascending: false })
+
     setApplications(apps || [])
     setVerifications(vers || [])
+    setReports(reps || [])
     setLoading(false)
   }
 
   async function approveApplication(app: any) {
-    // turtle_points tablosuna ekle
     await supabase.from('turtle_points').insert({
       name: app.name,
       address: app.address,
@@ -46,8 +52,6 @@ export default function Admin() {
       phone: app.phone,
       email: app.owner_email,
     })
-
-    // Başvuruyu onayla
     await supabase.from('point_applications').update({ status: 'approved' }).eq('id', app.id)
     fetchData()
   }
@@ -68,24 +72,47 @@ export default function Admin() {
     fetchData()
   }
 
+  async function dismissReport(id: string) {
+    await supabase.from('listing_reports').update({ status: 'dismissed' }).eq('id', id)
+    fetchData()
+  }
+
+  async function removeListingFromReport(rep: any) {
+    await supabase.from('listings').update({ status: 'deleted' }).eq('id', rep.listing_id)
+    await supabase.from('listing_reports').update({ status: 'reviewed' }).eq('id', rep.id)
+    fetchData()
+  }
+
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
       pending: 'bg-amber-100 text-amber-700',
       approved: 'bg-emerald-100 text-emerald-700',
       verified: 'bg-emerald-100 text-emerald-700',
       rejected: 'bg-red-100 text-red-700',
+      reviewed: 'bg-blue-100 text-blue-700',
+      dismissed: 'bg-gray-100 text-gray-500',
     }
     const labels: Record<string, string> = {
       pending: 'Bekliyor',
       approved: 'Onaylandı',
       verified: 'Doğrulandı',
       rejected: 'Reddedildi',
+      reviewed: 'İncelendi',
+      dismissed: 'Geçildi',
     }
     return (
       <span className={`text-xs font-medium px-2 py-1 rounded-full ${map[status] || 'bg-gray-100 text-gray-600'}`}>
         {labels[status] || status}
       </span>
     )
+  }
+
+  const reasonLabels: Record<string, string> = {
+    dolandirici: '🚨 Dolandırıcı',
+    yaniltici: '⚠️ Yanıltıcı',
+    kopya: '📋 Kopya',
+    uygunsuz: '🚫 Uygunsuz',
+    diger: '📝 Diğer',
   }
 
   if (loading) return (
@@ -110,16 +137,18 @@ export default function Admin() {
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Paneli</h1>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('applications')}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <button onClick={() => setActiveTab('applications')}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'applications' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
             🏪 Nokta Başvuruları ({applications.filter(a => a.status === 'pending').length})
           </button>
-          <button
-            onClick={() => setActiveTab('verifications')}
+          <button onClick={() => setActiveTab('verifications')}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'verifications' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
             🛡️ Doğrulama İstekleri ({verifications.filter(v => v.status === 'pending').length})
+          </button>
+          <button onClick={() => setActiveTab('reports')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'reports' ? 'bg-red-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
+            🚨 Şikayetler ({reports.filter(r => r.status === 'pending').length})
           </button>
         </div>
 
@@ -189,6 +218,58 @@ export default function Admin() {
                       className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition">
                       ❌ Reddet
                     </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Şikayetler */}
+        {activeTab === 'reports' && (
+          <div className="flex flex-col gap-4">
+            {reports.length === 0 ? (
+              <p className="text-gray-400 text-center py-12">Henüz şikayet yok.</p>
+            ) : reports.map(rep => (
+              <div key={rep.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex gap-3 items-start">
+                    {rep.listings?.images?.[0] ? (
+                      <img src={rep.listings.images[0]} className="w-16 h-16 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-2xl">📦</div>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-gray-800">{rep.listings?.title}</h3>
+                      <p className="text-sm text-emerald-600 font-bold">{rep.listings?.price?.toLocaleString('tr-TR')} ₺</p>
+                      <p className="text-sm text-gray-500">
+                        Şikayet: {reasonLabels[rep.reason] || rep.reason}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Şikayetçi: {rep.profiles?.full_name || rep.profiles?.username}
+                      </p>
+                      {rep.description && (
+                        <p className="text-sm text-gray-600 mt-1 italic">"{rep.description}"</p>
+                      )}
+                    </div>
+                  </div>
+                  {statusBadge(rep.status)}
+                </div>
+                {rep.status === 'pending' && (
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => removeListingFromReport(rep)}
+                      className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-red-600 transition">
+                      🗑️ İlanı Kaldır
+                    </button>
+                    <button onClick={() => dismissReport(rep.id)}
+                      className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-200 transition">
+                      Geç
+                    </button>
+                    <Link to={`/listing/${rep.listing_id}`} target="_blank">
+                      <button className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-100 transition">
+                        👁️ İlanı Gör
+                      </button>
+                    </Link>
                   </div>
                 )}
               </div>
