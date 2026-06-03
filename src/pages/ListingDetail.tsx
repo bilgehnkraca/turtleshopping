@@ -36,6 +36,7 @@ export default function ListingDetail() {
   const [reportDescription, setReportDescription] = useState('')
   const [reportLoading, setReportLoading] = useState(false)
   const [reportSent, setReportSent] = useState(false)
+  const [similarListings, setSimilarListings] = useState<any[]>([])
 
   useEffect(() => {
     fetchListing()
@@ -66,7 +67,20 @@ export default function ListingDetail() {
           .single()
         setVerification(vData)
       }
+      fetchSimilarListings(data.category_id, data.id)
     }
+  }
+
+  async function fetchSimilarListings(categoryId: number, currentId: string) {
+    const { data } = await supabase
+      .from('listings')
+      .select('*, categories(name, icon)')
+      .eq('category_id', categoryId)
+      .eq('status', 'active')
+      .eq('suspended', false)
+      .neq('id', currentId)
+      .limit(4)
+    setSimilarListings(data || [])
   }
 
   async function checkFavorite(userId: string) {
@@ -237,8 +251,6 @@ export default function ListingDetail() {
           )}
 
           <div className="p-6">
-
-            {/* Askıya alınma uyarısı */}
             {isSuspended && (
               <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
                 <span className="text-red-500 text-xl">⚠️</span>
@@ -349,6 +361,33 @@ export default function ListingDetail() {
             )}
           </div>
         </div>
+
+        {/* Benzer İlanlar */}
+        {similarListings.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Benzer İlanlar</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {similarListings.map(item => (
+                <Link to={`/listing/${item.id}`} key={item.id} className="group" onClick={() => setActiveImage(0)}>
+                  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition">
+                    {item.images?.[0] ? (
+                      <img src={item.images[0]} alt={item.title}
+                        className="w-full h-32 object-cover group-hover:scale-105 transition duration-300" />
+                    ) : (
+                      <div className="w-full h-32 bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center text-3xl">
+                        {item.categories?.icon || '📦'}
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <p className="font-medium text-gray-800 text-sm truncate">{item.title}</p>
+                      <p className="text-emerald-600 font-bold text-sm mt-1">{item.price.toLocaleString('tr-TR')} ₺</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {showVerifyModal && (
