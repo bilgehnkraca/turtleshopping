@@ -67,21 +67,22 @@ export default function ListingDetail() {
           .single()
         setVerification(vData)
       }
+      console.log('category_id:', data.category_id, 'id:', data.id)
       fetchSimilarListings(data.category_id, data.id)
     }
   }
 
   async function fetchSimilarListings(categoryId: number, currentId: string) {
-    const { data } = await supabase
-      .from('listings')
-      .select('*, categories(name, icon)')
-      .eq('category_id', categoryId)
-      .eq('status', 'active')
-      .eq('suspended', false)
-      .neq('id', currentId)
-      .limit(4)
-    setSimilarListings(data || [])
-  }
+  const { data, error } = await supabase
+    .from('listings')
+    .select('*, categories(name, icon)')
+    .eq('category_id', categoryId)
+    .eq('status', 'active')
+    .neq('id', currentId)
+    .limit(4)
+  console.log('similar:', data, error)
+  setSimilarListings(data || [])
+}
 
   async function checkFavorite(userId: string) {
     const { data } = await supabase
