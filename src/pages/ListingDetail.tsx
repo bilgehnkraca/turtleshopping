@@ -195,6 +195,7 @@ export default function ListingDetail() {
   const category = listing.categories as any
   const isOwner = currentUser === listing.user_id
   const isVerified = (listing as any).verified === true
+  const isSuspended = (listing as any).suspended === true
   const verificationPending = verification && verification.status === 'pending'
   const images = listing.images || []
 
@@ -213,7 +214,6 @@ export default function ListingDetail() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
-          {/* Fotoğraf Galerisi */}
           {images.length > 0 ? (
             <div>
               <img src={images[activeImage]} alt={listing.title}
@@ -237,6 +237,18 @@ export default function ListingDetail() {
           )}
 
           <div className="p-6">
+
+            {/* Askıya alınma uyarısı */}
+            {isSuspended && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                <span className="text-red-500 text-xl">⚠️</span>
+                <div>
+                  <p className="text-red-700 font-semibold text-sm">Bu İlan İnceleme Altında</p>
+                  <p className="text-red-600 text-xs">Birden fazla şikayet aldı, ekibimiz inceliyor.</p>
+                </div>
+              </div>
+            )}
+
             {isVerified && (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
                 <span className="text-emerald-600 text-xl">✅</span>
@@ -339,7 +351,6 @@ export default function ListingDetail() {
         </div>
       </div>
 
-      {/* Doğrulama Modal */}
       {showVerifyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
@@ -369,7 +380,6 @@ export default function ListingDetail() {
         </div>
       )}
 
-      {/* Şikayet Modal */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
@@ -383,7 +393,6 @@ export default function ListingDetail() {
               <>
                 <h2 className="text-xl font-bold text-gray-800 mb-2">🚨 İlanı Şikayet Et</h2>
                 <p className="text-gray-500 text-sm mb-4">Şikayet sebebini seçin:</p>
-
                 <div className="flex flex-col gap-2 mb-4">
                   {Object.entries(reportReasons).map(([key, label]) => (
                     <button key={key} onClick={() => setReportReason(key)}
@@ -396,7 +405,6 @@ export default function ListingDetail() {
                     </button>
                   ))}
                 </div>
-
                 <textarea
                   value={reportDescription}
                   onChange={e => setReportDescription(e.target.value)}
@@ -404,7 +412,6 @@ export default function ListingDetail() {
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none mb-4"
                 />
-
                 <div className="flex gap-3">
                   <button onClick={handleReport} disabled={!reportReason || reportLoading}
                     className="flex-1 bg-red-500 text-white py-3 rounded-xl font-medium hover:bg-red-600 transition disabled:opacity-50 text-sm">

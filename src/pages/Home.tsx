@@ -30,6 +30,7 @@ export default function Home() {
     if (search) query = query.ilike('title', `%${search}%`)
     if (selectedCategory) query = query.eq('category_id', selectedCategory)
     if (selectedCity) query = query.eq('city', selectedCity)
+        query = query.eq('suspended', false)
 
     const { data } = await query
     setListings(data || [])
