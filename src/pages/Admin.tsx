@@ -6,7 +6,8 @@ const ADMIN_EMAIL = 'bilgekral04@gmail.com'
 
 export default function Admin() {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'applications' | 'verifications' | 'reports'>('applications')
+  const [activeTab, setActiveTab] = useState<'pending_listings' | 'applications' | 'verifications' | 'reports'>('pending_listings')
+  const [pendingListings, setPendingListings] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [verifications, setVerifications] = useState<any[]>([])
   const [reports, setReports] = useState<any[]>([])
@@ -23,6 +24,12 @@ export default function Admin() {
   }, [])
 
   async function fetchData() {
+    const { data: pending } = await supabase
+      .from('listings')
+      .select('*, profiles!listings_user_id_fkey(username, full_name), categories(name, icon)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+
     const { data: apps } = await supabase
       .from('point_applications')
       .select('*')
@@ -38,10 +45,21 @@ export default function Admin() {
       .select('*, listings(title, price, images), profiles!listing_reports_reporter_id_fkey(username, full_name)')
       .order('created_at', { ascending: false })
 
+    setPendingListings(pending || [])
     setApplications(apps || [])
     setVerifications(vers || [])
     setReports(reps || [])
     setLoading(false)
+  }
+
+  async function approveListing(id: string) {
+    await supabase.from('listings').update({ status: 'active' }).eq('id', id)
+    fetchData()
+  }
+
+  async function rejectListing(id: string) {
+    await supabase.from('listings').update({ status: 'deleted' }).eq('id', id)
+    fetchData()
   }
 
   async function approveApplication(app: any) {
@@ -138,19 +156,72 @@ export default function Admin() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
+          <button onClick={() => setActiveTab('pending_listings')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'pending_listings' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
+            📋 Bekleyen İlanlar ({pendingListings.length})
+          </button>
           <button onClick={() => setActiveTab('applications')}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'applications' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
             🏪 Nokta Başvuruları ({applications.filter(a => a.status === 'pending').length})
           </button>
           <button onClick={() => setActiveTab('verifications')}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'verifications' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
-            🛡️ Doğrulama İstekleri ({verifications.filter(v => v.status === 'pending').length})
+            🛡️ Doğrulama ({verifications.filter(v => v.status === 'pending').length})
           </button>
           <button onClick={() => setActiveTab('reports')}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'reports' ? 'bg-red-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
             🚨 Şikayetler ({reports.filter(r => r.status === 'pending').length})
           </button>
         </div>
+
+        {/* Bekleyen İlanlar */}
+        {activeTab === 'pending_listings' && (
+          <div className="flex flex-col gap-4">
+            {pendingListings.length === 0 ? (
+              <p className="text-gray-400 text-center py-12">Bekleyen ilan yok.</p>
+            ) : pendingListings.map(listing => (
+              <div key={listing.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                <div className="flex gap-4 items-start mb-3">
+                  {listing.images?.[0] ? (
+                    <img src={listing.images[0]} className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">
+                      {listing.categories?.icon || '📦'}
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800">{listing.title}</h3>
+                    <p className="text-emerald-600 font-bold">{listing.price?.toLocaleString('tr-TR')} ₺</p>
+                    <p className="text-sm text-gray-500">
+                      {listing.categories?.icon} {listing.categories?.name} · {listing.city}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      👤 {listing.profiles?.full_name || listing.profiles?.username}
+                    </p>
+                    {listing.description && (
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{listing.description}</p>
+                    )}
+                  </div>
+                  <Link to={`/listing/${listing.id}`} target="_blank">
+                    <button className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-100 transition">
+                      👁️ Önizle
+                    </button>
+                  </Link>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => approveListing(listing.id)}
+                    className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-emerald-600 transition">
+                    ✅ Yayınla
+                  </button>
+                  <button onClick={() => rejectListing(listing.id)}
+                    className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition">
+                    ❌ Reddet
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Nokta Başvuruları */}
         {activeTab === 'applications' && (
@@ -242,15 +313,9 @@ export default function Admin() {
                     <div>
                       <h3 className="font-bold text-gray-800">{rep.listings?.title}</h3>
                       <p className="text-sm text-emerald-600 font-bold">{rep.listings?.price?.toLocaleString('tr-TR')} ₺</p>
-                      <p className="text-sm text-gray-500">
-                        Şikayet: {reasonLabels[rep.reason] || rep.reason}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Şikayetçi: {rep.profiles?.full_name || rep.profiles?.username}
-                      </p>
-                      {rep.description && (
-                        <p className="text-sm text-gray-600 mt-1 italic">"{rep.description}"</p>
-                      )}
+                      <p className="text-sm text-gray-500">Şikayet: {reasonLabels[rep.reason] || rep.reason}</p>
+                      <p className="text-sm text-gray-500">Şikayetçi: {rep.profiles?.full_name || rep.profiles?.username}</p>
+                      {rep.description && <p className="text-sm text-gray-600 mt-1 italic">"{rep.description}"</p>}
                     </div>
                   </div>
                   {statusBadge(rep.status)}

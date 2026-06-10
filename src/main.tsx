@@ -15,6 +15,7 @@ import ApplyPoint from './pages/ApplyPoint'
 import Admin from './pages/Admin'
 import EditListing from './pages/EditListing'
 import PointPanel from './pages/PointPanel'
+import ListingSubmitted from './pages/ListingSubmitted'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -33,6 +34,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/admin" element={<Admin />} />
         <Route path="/edit-listing/:id" element={<EditListing />} />
         <Route path="/point-panel" element={<PointPanel />} />
+        <Route path="/listing-submitted" element={<ListingSubmitted />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
