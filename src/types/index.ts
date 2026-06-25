@@ -4,6 +4,7 @@ export interface Profile {
   full_name: string
   avatar_url?: string
   phone?: string
+  phone_verified?: boolean
   city?: string
   rating: number
   review_count: number
@@ -31,6 +32,9 @@ export interface Listing {
   city?: string
   images?: string[]
   view_count: number
+  is_tradeable?: boolean
+  is_bargainable?: boolean
+  is_guaranteed?: boolean
   created_at: string
   updated_at: string
   profiles?: Profile
@@ -55,4 +59,25 @@ export interface Conversation {
   listings?: Listing
   profiles?: Profile
   messages?: Message[]
+}
+
+export interface UserReview {
+  id: string
+  reviewer_id: string
+  target_user_id: string
+  listing_id?: string
+  rating: number
+  comment?: string
+  created_at: string
+  reviewer?: Profile
+}
+
+export interface AppNotification {
+  id: string
+  user_id: string
+  listing_id?: string
+  title: string
+  message: string
+  is_read: boolean
+  created_at: string
 }

@@ -18,6 +18,8 @@ export default function CreateListing() {
   const [categoryId, setCategoryId] = useState('')
   const [condition, setCondition] = useState('good')
   const [city, setCity] = useState('')
+  const [isTradeable, setIsTradeable] = useState(false)
+  const [isBargainable, setIsBargainable] = useState(false)
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []))
@@ -82,6 +84,8 @@ export default function CreateListing() {
       city,
       images: imageUrls,
       status: 'pending',
+      is_tradeable: isTradeable,
+      is_bargainable: isBargainable,
     })
 
     if (error) setErrors({ general: error.message })
@@ -233,6 +237,21 @@ export default function CreateListing() {
               ))}
             </select>
             {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+          </div>
+
+          {/* Ekstra Seçenekler */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ekstra Seçenekler</label>
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={isTradeable} onChange={e => setIsTradeable(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer" />
+                <span className="text-sm text-gray-700 font-medium">Takasa Açık (Diğer ürünlerle takas kabul ediyorum)</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={isBargainable} onChange={e => setIsBargainable(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer" />
+                <span className="text-sm text-gray-700 font-medium">Pazarlığa Açık (Fiyatta indirim yapabilirim)</span>
+              </label>
+            </div>
           </div>
 
           <button onClick={handleSubmit} disabled={loading}

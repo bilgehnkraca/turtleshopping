@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Store, MapPin, Bell, MessageSquare, Heart, User as UserIcon, LogOut, PlusCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Listing } from '../types'
 import { useAuth } from '../hooks/useAuth'
@@ -12,25 +13,52 @@ export default function Home() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [condition, setCondition] = useState('')
+  const [sortBy, setSortBy] = useState('newest')
   const [categories, setCategories] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     fetchListings()
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []))
-  }, [search, selectedCategory, selectedCity])
+    
+    if (user) {
+      fetchUnreadCount()
+    }
+  }, [search, selectedCategory, selectedCity, minPrice, maxPrice, condition, sortBy, user])
+
+  async function fetchUnreadCount() {
+    if (!user) return
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    
+    setUnreadCount(count || 0)
+  }
 
   async function fetchListings() {
     setLoading(true)
     let query = supabase
       .from('listings')
       .select('*, profiles!listings_user_id_fkey(username, city), categories(name, icon)')
-      .order('created_at', { ascending: false })
-      .limit(20)
+      .eq('suspended', false)
 
     if (search) query = query.ilike('title', `%${search}%`)
     if (selectedCategory) query = query.eq('category_id', selectedCategory)
     if (selectedCity) query = query.eq('city', selectedCity)
-        query = query.eq('suspended', false)
+    if (minPrice) query = query.gte('price', minPrice)
+    if (maxPrice) query = query.lte('price', maxPrice)
+    if (condition) query = query.eq('condition', condition)
+
+    if (sortBy === 'newest') query = query.order('created_at', { ascending: false })
+    if (sortBy === 'price_asc') query = query.order('price', { ascending: true })
+    if (sortBy === 'price_desc') query = query.order('price', { ascending: false })
+
+    query = query.limit(20)
 
     const { data } = await query
     setListings(data || [])
@@ -46,30 +74,44 @@ export default function Home() {
             <span className="text-2xl">🐢</span>
             <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
           </Link>
-          <div className="flex gap-3 items-center">
-            <Link to="/turtle-points" className="text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-              🗺️ Noktalar
+          <div className="flex gap-4 items-center">
+            <Link to="/turtle-points" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
+              <MapPin className="w-4 h-4" /> Noktalar
             </Link>
             {user ? (
               <>
                 {isPointOwner && (
-                  <Link to="/point-panel" className="text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                    🏪 Nokta Paneli
+                  <Link to="/point-panel" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
+                    <Store className="w-4 h-4" /> Nokta Paneli
                   </Link>
                 )}
-                <Link to="/messages" className="text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                  💬 Mesajlar
+                <Link to="/notifications" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition relative">
+                  <div className="relative">
+                    <Bell className="w-4 h-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full border border-white min-w-[14px] text-center">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  Bildirimler
                 </Link>
-                <Link to={`/profile/${user.id}`} className="text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                  👤 Profilim
+                <Link to="/messages" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
+                  <MessageSquare className="w-4 h-4" /> Mesajlar
+                </Link>
+                <Link to="/favorites" className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 text-sm font-medium transition">
+                  <Heart className="w-4 h-4" /> Favoriler
+                </Link>
+                <Link to={`/profile/${user.id}`} className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
+                  <UserIcon className="w-4 h-4" /> Profilim
                 </Link>
                 <Link to="/create-listing">
-                  <button className="bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-600 transition shadow-sm">
-                    + İlan Ver
+                  <button className="flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-600 transition shadow-sm ml-2">
+                    <PlusCircle className="w-4 h-4" /> İlan Ver
                   </button>
                 </Link>
-                <button onClick={signOut} className="text-gray-400 text-sm hover:text-gray-700 transition">
-                  Çıkış
+                <button onClick={signOut} className="flex items-center gap-1.5 text-gray-400 text-sm hover:text-gray-700 transition ml-2">
+                  <LogOut className="w-4 h-4" /> Çıkış
                 </button>
               </>
             ) : (
@@ -120,41 +162,88 @@ export default function Home() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
 
-        {(search || selectedCategory || selectedCity) && (
-          <div className="flex flex-wrap gap-3 mb-6">
-            <input
-              placeholder="İlan ara..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="flex-1 min-w-48 px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-            />
-            <select
-              value={selectedCategory}
-              onChange={e => setSelectedCategory(e.target.value)}
-              className="px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
-              <option value="">Tüm Kategoriler</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-              ))}
-            </select>
-            <select
-              value={selectedCity}
-              onChange={e => setSelectedCity(e.target.value)}
-              className="px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
-              <option value="">Tüm Şehirler</option>
-              {cities.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            <button onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedCity('') }}
-              className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-500 hover:text-gray-800 transition">
+        {(search || selectedCategory || selectedCity || minPrice || maxPrice || condition || sortBy !== 'newest') && (
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
+                <label className="text-xs text-gray-500 mb-1 block">Arama</label>
+                <input
+                  placeholder="İlan ara..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition"
+                />
+            </div>
+            
+            <div className="w-full md:w-auto">
+                <label className="text-xs text-gray-500 mb-1 block">Kategori</label>
+                <select
+                  value={selectedCategory}
+                  onChange={e => setSelectedCategory(e.target.value)}
+                  className="w-full md:w-36 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
+                  <option value="">Tümü</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                  ))}
+                </select>
+            </div>
+
+            <div className="w-full md:w-auto">
+                <label className="text-xs text-gray-500 mb-1 block">Şehir</label>
+                <select
+                  value={selectedCity}
+                  onChange={e => setSelectedCity(e.target.value)}
+                  className="w-full md:w-36 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
+                  <option value="">Tümü</option>
+                  {cities.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+            </div>
+
+            <div className="w-full md:w-auto flex gap-2">
+                <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Min ₺</label>
+                    <input type="number" placeholder="0" value={minPrice} onChange={e => setMinPrice(e.target.value)}
+                        className="w-20 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition" />
+                </div>
+                <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Max ₺</label>
+                    <input type="number" placeholder="∞" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
+                        className="w-20 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition" />
+                </div>
+            </div>
+
+            <div className="w-full md:w-auto">
+                <label className="text-xs text-gray-500 mb-1 block">Durum</label>
+                <select value={condition} onChange={e => setCondition(e.target.value)}
+                    className="w-full md:w-32 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
+                    <option value="">Tümü</option>
+                    <option value="new">Sıfır</option>
+                    <option value="like_new">Yeni Gibi</option>
+                    <option value="good">İyi Durumda</option>
+                    <option value="fair">Makul</option>
+                </select>
+            </div>
+
+            <div className="w-full md:w-auto">
+                <label className="text-xs text-gray-500 mb-1 block">Sırala</label>
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                    className="w-full md:w-36 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
+                    <option value="newest">En Yeni</option>
+                    <option value="price_asc">En Ucuz</option>
+                    <option value="price_desc">En Pahalı</option>
+                </select>
+            </div>
+
+            <button onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedCity(''); setMinPrice(''); setMaxPrice(''); setCondition(''); setSortBy('newest') }}
+              className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition w-full md:w-auto">
               Temizle ✕
             </button>
           </div>
         )}
 
         {/* Kategoriler */}
-        {categories.length > 0 && !search && !selectedCity && (
+        {categories.length > 0 && !search && !selectedCity && !minPrice && !maxPrice && !condition && sortBy === 'newest' && (
           <div className="mb-8">
             <h2 className="text-lg font-bold text-gray-700 mb-4">Kategoriler</h2>
             <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
@@ -188,12 +277,23 @@ export default function Home() {
           </div>
         )}
 
-        {!selectedCategory && !search && !selectedCity && (
+        {!selectedCategory && !search && !selectedCity && !minPrice && !maxPrice && !condition && sortBy === 'newest' && (
           <h2 className="text-lg font-bold text-gray-700 mb-4">Son İlanlar</h2>
         )}
 
         {loading ? (
-          <div className="text-center py-20 text-gray-400">Yükleniyor...</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[1,2,3,4,5,6,7,8].map(n => (
+              <div key={n} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm animate-pulse">
+                 <div className="w-full h-44 bg-gray-200"></div>
+                 <div className="p-3">
+                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                   <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+                   <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                 </div>
+              </div>
+            ))}
+          </div>
         ) : listings.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <p className="text-4xl mb-3">🔍</p>
@@ -203,7 +303,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {listings.map(listing => (
               <Link to={`/listing/${listing.id}`} key={listing.id} className="group">
-                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition duration-200">
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition duration-200 flex flex-col h-full">
                   {listing.images?.[0] ? (
                     <img src={listing.images[0]} alt={listing.title}
                       className="w-full h-44 object-cover group-hover:scale-105 transition duration-300" />
@@ -213,15 +313,23 @@ export default function Home() {
                       <span className="text-xs text-emerald-600 font-medium">{(listing.categories as any)?.name || 'Diğer'}</span>
                     </div>
                   )}
-                  <div className="p-3">
+                  <div className="p-3 flex-1 flex flex-col">
                     <h3 className="font-semibold text-gray-800 text-sm truncate">{listing.title}</h3>
                     <p className="text-emerald-600 font-bold mt-1 text-base">{listing.price.toLocaleString('tr-TR')} ₺</p>
-                    {(listing as any).verified && (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium mt-1">
-                        ✅ TurtleGüvence
-                      </span>
-                    )}
-                    <p className="text-xs text-gray-400 mt-1 truncate">
+                    <div className="flex-1"></div>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                        {listing.is_guaranteed && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 rounded text-[10px] text-emerald-700 font-bold border border-emerald-100 shadow-sm">
+                            🛡️ TurtleGüvence
+                        </span>
+                        )}
+                        {listing.condition && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 rounded text-[10px] text-gray-600 border border-gray-200">
+                                {listing.condition === 'new' ? 'Sıfır' : listing.condition === 'like_new' ? 'Yeni Gibi' : listing.condition === 'good' ? 'İyi' : 'Makul'}
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2 truncate">
                       {(listing.categories as any)?.icon} {(listing.categories as any)?.name} · {(listing.profiles as any)?.city || 'Türkiye'}
                     </p>
                   </div>

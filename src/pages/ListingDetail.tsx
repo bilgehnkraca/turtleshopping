@@ -263,11 +263,21 @@ export default function ListingDetail() {
             )}
 
             {isVerified && (
-              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4">
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 shadow-sm">
                 <span className="text-emerald-600 text-xl">✅</span>
                 <div>
                   <p className="text-emerald-700 font-semibold text-sm">TurtleGüvence ile Doğrulandı</p>
                   <p className="text-emerald-600 text-xs">Bu ürün uzmanlarımız tarafından kontrol edilmiştir</p>
+                </div>
+              </div>
+            )}
+
+            {listing.is_guaranteed && !isVerified && (
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 shadow-sm">
+                <span className="text-emerald-600 text-xl">🛡️</span>
+                <div>
+                  <p className="text-emerald-700 font-semibold text-sm">TurtleGüvence Seçili</p>
+                  <p className="text-emerald-600 text-xs">Satıcı bu işlemde TurtleGüvence altyapısını tercih ediyor.</p>
                 </div>
               </div>
             )}
@@ -298,17 +308,40 @@ export default function ListingDetail() {
             <p className="text-3xl font-bold text-emerald-600 mb-4">{listing.price.toLocaleString('tr-TR')} ₺</p>
 
             <div className="flex gap-2 flex-wrap mb-4">
-              <span className="bg-emerald-50 text-emerald-700 text-xs font-medium px-3 py-1 rounded-full">
+              <span className="bg-emerald-50 text-emerald-700 text-xs font-medium px-3 py-1 rounded-full border border-emerald-100">
                 {conditionLabels[listing.condition]}
               </span>
-              <span className="bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full">
+              <span className="bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full border border-gray-200">
                 {category?.icon} {category?.name}
               </span>
               {listing.city && (
-                <span className="bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full">
+                <span className="bg-gray-100 text-gray-600 text-xs font-medium px-3 py-1 rounded-full border border-gray-200">
                   📍 {listing.city}
                 </span>
               )}
+            </div>
+
+            <div className="flex gap-2 flex-wrap mb-6">
+               {listing.is_tradeable === false && (
+                  <span className="bg-red-50 text-red-600 text-xs font-semibold px-2 py-1 rounded border border-red-100">
+                      🚫 Takasa Kapalı
+                  </span>
+               )}
+               {listing.is_bargainable === false && (
+                  <span className="bg-red-50 text-red-600 text-xs font-semibold px-2 py-1 rounded border border-red-100">
+                      🚫 Pazarlığa Kapalı
+                  </span>
+               )}
+               {listing.is_tradeable === true && (
+                  <span className="bg-blue-50 text-blue-600 text-xs font-semibold px-2 py-1 rounded border border-blue-100">
+                      🔄 Takasa Açık
+                  </span>
+               )}
+               {listing.is_bargainable === true && (
+                  <span className="bg-blue-50 text-blue-600 text-xs font-semibold px-2 py-1 rounded border border-blue-100">
+                      🤝 Pazarlığa Açık
+                  </span>
+               )}
             </div>
 
             {listing.description && (

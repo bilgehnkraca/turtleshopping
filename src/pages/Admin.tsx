@@ -151,26 +151,52 @@ export default function Admin() {
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Paneli</h1>
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            ⚙️ Sistem Komuta Merkezi
+        </h1>
+
+        {/* KPI Dashboard */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-2xl mb-3">📋</div>
+            <span className="text-3xl font-black text-gray-800">{pendingListings.length}</span>
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Onay Bekleyen İlan</span>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-2xl mb-3">🏪</div>
+            <span className="text-3xl font-black text-gray-800">{applications.filter(a => a.status === 'pending').length}</span>
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Yeni Nokta Başvurusu</span>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-2xl mb-3">🛡️</div>
+            <span className="text-3xl font-black text-gray-800">{verifications.filter(v => v.status === 'pending').length}</span>
+            <span className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Aktif Doğrulama Sırası</span>
+          </div>
+          <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-5 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center text-2xl mb-3">🚨</div>
+            <span className="text-3xl font-black text-red-600">{reports.filter(r => r.status === 'pending').length}</span>
+            <span className="text-xs text-red-500 font-bold uppercase tracking-wider mt-1">Çözümsüz Şikayetler</span>
+          </div>
+        </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="flex gap-2 mb-6 flex-wrap bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
           <button onClick={() => setActiveTab('pending_listings')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'pending_listings' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
-            📋 Bekleyen İlanlar ({pendingListings.length})
+            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition ${activeTab === 'pending_listings' ? 'bg-gray-800 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            İlanlar
           </button>
           <button onClick={() => setActiveTab('applications')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'applications' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
-            🏪 Nokta Başvuruları ({applications.filter(a => a.status === 'pending').length})
+            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition ${activeTab === 'applications' ? 'bg-gray-800 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            Noktalar
           </button>
           <button onClick={() => setActiveTab('verifications')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'verifications' ? 'bg-emerald-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
-            🛡️ Doğrulama ({verifications.filter(v => v.status === 'pending').length})
+            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition ${activeTab === 'verifications' ? 'bg-gray-800 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            Doğrulamalar
           </button>
           <button onClick={() => setActiveTab('reports')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${activeTab === 'reports' ? 'bg-red-500 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
-            🚨 Şikayetler ({reports.filter(r => r.status === 'pending').length})
+            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition ${activeTab === 'reports' ? 'bg-red-500 text-white shadow-md' : 'text-gray-500 hover:bg-red-50 hover:text-red-600'}`}>
+            Şikayetler
           </button>
         </div>
 

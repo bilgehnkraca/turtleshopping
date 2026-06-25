@@ -16,6 +16,9 @@ import Admin from './pages/Admin'
 import EditListing from './pages/EditListing'
 import PointPanel from './pages/PointPanel'
 import ListingSubmitted from './pages/ListingSubmitted'
+import Favorites from './pages/Favorites'
+import Notifications from './pages/Notifications'
+import ResetPassword from './pages/ResetPassword'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -35,6 +38,9 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/edit-listing/:id" element={<EditListing />} />
         <Route path="/point-panel" element={<PointPanel />} />
         <Route path="/listing-submitted" element={<ListingSubmitted />} />
+        <Route path="/favorites" element={<Favorites />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

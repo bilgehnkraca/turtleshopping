@@ -25,7 +25,6 @@ export default function PointPanel() {
       .maybeSingle()
 
     if (!data) {
-      // owner_id ile eşleşme yoksa email ile dene
       const { data: user } = await supabase.auth.getUser()
       const { data: pointByEmail } = await supabase
         .from('turtle_points')
@@ -85,9 +84,9 @@ export default function PointPanel() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
-      pending: 'bg-amber-100 text-amber-700',
-      verified: 'bg-emerald-100 text-emerald-700',
-      rejected: 'bg-red-100 text-red-700',
+      pending: 'bg-amber-100 text-amber-700 border-amber-200',
+      verified: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      rejected: 'bg-red-100 text-red-700 border-red-200',
     }
     const labels: Record<string, string> = {
       pending: '⏳ Bekliyor',
@@ -95,108 +94,124 @@ export default function PointPanel() {
       rejected: '❌ Reddedildi',
     }
     return (
-      <span className={`text-xs font-medium px-3 py-1 rounded-full ${map[status] || 'bg-gray-100 text-gray-600'}`}>
+      <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${map[status] || 'bg-gray-100 text-gray-600'}`}>
         {labels[status] || status}
       </span>
     )
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <p className="text-gray-400">Yükleniyor...</p>
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent"></div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🐢</span>
-            <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* PoS Header */}
+      <nav className="bg-gray-900 text-white shadow-md">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+          <Link to="/" className="flex items-center gap-3">
+            <span className="text-3xl">🐢</span>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Turtle Terminal</h1>
+              <p className="text-xs text-gray-400">Nokta Operasyon Sistemi</p>
+            </div>
           </Link>
-          <span className="text-sm text-gray-500 font-medium">🏪 Nokta Paneli</span>
+          <div className="text-right">
+            <p className="font-bold text-emerald-400">{point?.name}</p>
+            <p className="text-xs text-gray-400">Aktif Terminal</p>
+          </div>
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Nokta bilgisi */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6 flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-2xl">🏪</div>
-          <div>
-            <h2 className="font-bold text-gray-800">{point?.name}</h2>
-            <p className="text-sm text-gray-500">📍 {point?.address}, {point?.city}</p>
+      <div className="max-w-4xl mx-auto px-4 py-6 w-full flex-1">
+        
+        {/* QR Kod Aksiyon Alanı */}
+        <div className="bg-white rounded-3xl shadow-sm border border-emerald-100 p-8 mb-8 text-center flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+          <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-4xl mb-4">
+            📷
           </div>
-          <div className="ml-auto">
-            <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-3 py-1 rounded-full">Aktif Nokta</span>
-          </div>
+          <h2 className="text-2xl font-black text-gray-800 mb-2">QR Kod ile İşlem Yap</h2>
+          <p className="text-gray-500 mb-6 max-w-sm">Müşterinin getirdiği ürün üzerindeki veya uygulamasındaki QR kodu okutarak teslim alma sürecini başlatın.</p>
+          <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-bold py-4 px-8 rounded-2xl shadow-lg transition transform hover:scale-105 w-full max-w-md flex items-center justify-center gap-3">
+            <span>Kamerayı Aç ve Tara</span>
+          </button>
+          <button className="mt-4 text-emerald-600 font-bold text-sm hover:underline">
+            veya manuel Teslimat Kodu gir
+          </button>
         </div>
 
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Doğrulama İstekleri
-          <span className="ml-2 text-sm font-normal text-gray-400">
-            ({verifications.filter(v => v.status === 'pending').length} bekliyor)
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-black text-gray-800">
+            Bekleyen İşlemler
+          </h2>
+          <span className="bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-full">
+            {verifications.filter(v => v.status === 'pending').length} Sipariş
           </span>
-        </h2>
+        </div>
 
         {verifications.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
+          <div className="text-center py-20 text-gray-400 bg-white rounded-3xl border border-gray-100 border-dashed">
             <p className="text-4xl mb-3">📭</p>
-            <p>Henüz doğrulama isteği yok.</p>
+            <p className="font-bold">Bekleyen işlem bulunmuyor.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {verifications.map(ver => (
-              <div key={ver.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-start gap-4 mb-4">
-                  {ver.listings?.images?.[0] ? (
-                    <img src={ver.listings.images[0]} className="w-20 h-20 rounded-xl object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-3xl flex-shrink-0">📦</div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-gray-800">{ver.listings?.title}</h3>
-                      {statusBadge(ver.status)}
-                    </div>
-                    <p className="text-emerald-600 font-bold">{ver.listings?.price?.toLocaleString('tr-TR')} ₺</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Durum: {conditionLabels[ver.listings?.condition] || '-'}
-                    </p>
-                    {ver.listings?.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{ver.listings.description}</p>
-                    )}
-                  </div>
+              <div key={ver.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                  <span className="font-mono text-xs text-gray-500 font-bold">#TRT-{ver.id.substring(0,6).toUpperCase()}</span>
+                  {statusBadge(ver.status)}
                 </div>
-
-                {ver.status === 'pending' && (
-                  <div className="border-t border-gray-100 pt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Kontrol Notu</label>
-                    <textarea
-                      value={notes[ver.id] || ''}
-                      onChange={e => setNotes(prev => ({ ...prev, [ver.id]: e.target.value }))}
-                      placeholder="Ürün hakkında notunuzu yazın..."
-                      rows={2}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none mb-3"
-                    />
-                    <div className="flex gap-3">
-                      <button onClick={() => approveVerification(ver)}
-                        className="flex-1 bg-emerald-500 text-white py-2 rounded-xl text-sm font-medium hover:bg-emerald-600 transition">
-                        ✅ Doğrulandı — Ürün Uygun
-                      </button>
-                      <button onClick={() => rejectVerification(ver)}
-                        className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition">
-                        ❌ Reddet
-                      </button>
+                
+                <div className="p-4 flex-1 flex flex-col">
+                  <div className="flex items-start gap-4 mb-4">
+                    {ver.listings?.images?.[0] ? (
+                      <img src={ver.listings.images[0]} className="w-16 h-16 rounded-xl object-cover border border-gray-100" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-2xl">📦</div>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-gray-800 leading-tight">{ver.listings?.title}</h3>
+                      <p className="text-emerald-600 font-black mt-1">{ver.listings?.price?.toLocaleString('tr-TR')} ₺</p>
+                      <span className="inline-block mt-1 bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-md font-medium">
+                        Kondisyon: {conditionLabels[ver.listings?.condition] || '-'}
+                      </span>
                     </div>
                   </div>
-                )}
 
-                {ver.notes && (
-                  <div className="border-t border-gray-100 pt-3 mt-3">
-                    <p className="text-sm text-gray-500"><span className="font-medium">Not:</span> {ver.notes}</p>
-                  </div>
-                )}
+                  {ver.status === 'pending' && (
+                    <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
+                      <textarea
+                        value={notes[ver.id] || ''}
+                        onChange={e => setNotes(prev => ({ ...prev, [ver.id]: e.target.value }))}
+                        placeholder="Kontrol notu ekle (Zorunlu değil)..."
+                        rows={2}
+                        className="w-full px-3 py-2 bg-gray-50 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-emerald-500 mb-3 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={() => approveVerification(ver)}
+                          className="flex-1 bg-gray-800 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-black transition">
+                          Onayla
+                        </button>
+                        <button onClick={() => rejectVerification(ver)}
+                          className="bg-red-50 text-red-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-100 transition">
+                          Reddet
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {ver.notes && (
+                    <div className="mt-auto pt-3 border-t border-gray-100">
+                      <p className="text-xs text-gray-500 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                        <span className="font-bold text-amber-700">Not:</span> {ver.notes}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

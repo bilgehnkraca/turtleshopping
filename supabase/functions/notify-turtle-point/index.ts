@@ -1,46 +1,56 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// Setup type definitions for built-in Supabase Runtime APIs
-import "@supabase/functions-js/edge-runtime.d.ts";
-import { withSupabase } from "@supabase/server";
+serve(async (req) => {
+  const { verification_id } = await req.json()
 
-console.log("Hello from Functions!");
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  )
 
-// This endpoint uses 'publishable' | 'secret' access, apiKey is required.
-// Use publishable for Client-facing, key-validated endpoints
-// Use secret for Server-to-server, internal calls
-export default {
-  fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
-    // Called by another service with a secret key
-    // ctx.supabaseAdmin bypasses RLS — use for privileged operations
-    /*
-    if (ctx.authMode === "secret") {
-      const { user_id } = await req.json();
-      const { data } = await ctx.supabaseAdmin.auth.admin.getUserById(user_id);
+  // Doğrulama bilgilerini al
+  const { data: verification } = await supabase
+    .from('listing_verifications')
+    .select('*, listings(title, price, user_id), turtle_points(name, city, email)')
+    .eq('id', verification_id)
+    .single()
 
-      return Response.json({
-        email: data?.user?.email,
-      });
-    }
-    */
+  if (!verification) {
+    return new Response(JSON.stringify({ error: 'Verification not found' }), { status: 404 })
+  }
 
-    const { name } = await req.json();
+  const point = verification.turtle_points
+  const listing = verification.listings
 
-    return Response.json({
-      message: `Hello ${name}!`,
-    });
-  }),
-};
+  if (!point?.email) {
+    return new Response(JSON.stringify({ error: 'No email for point' }), { status: 400 })
+  }
 
-/* To invoke locally:
+  // Resend ile email gönder
+  const emailRes = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'TurtleShopping <bildirim@turtleshopping.com>',
+      to: point.email,
+      subject: '🐢 Yeni Doğrulama İsteği',
+      html: `
+        <h2>Merhaba ${point.name},</h2>
+        <p>Yeni bir doğrulama isteği aldınız.</p>
+        <hr>
+        <p><strong>Ürün:</strong> ${listing.title}</p>
+        <p><strong>Fiyat:</strong> ${listing.price.toLocaleString('tr-TR')} ₺</p>
+        <hr>
+        <p>Satıcı ürünü noktanıza getirdiğinde sisteme giriş yaparak doğrulama işlemini tamamlayın.</p>
+        <br>
+        <p>TurtleShopping Ekibi</p>
+      `,
+    }),
+  })
 
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/notify-turtle-point' \
-    --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
-    --data '{"name":"Functions"}'
-
-*/
+  return new Response(JSON.stringify({ success: true }), { status: 200 })
+})
