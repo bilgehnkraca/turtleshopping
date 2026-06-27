@@ -163,82 +163,70 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 py-8">
 
         {(search || selectedCategory || selectedCity || minPrice || maxPrice || condition || sortBy !== 'newest') && (
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-[200px]">
-                <label className="text-xs text-gray-500 mb-1 block">Arama</label>
+          <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 mb-8">
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+              <div className="flex-1">
                 <input
-                  placeholder="İlan ara..."
+                  placeholder="Ne arıyorsun? (Örn: iPhone 13)"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition"
+                  className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-emerald-500 text-gray-800 placeholder-gray-400 transition"
                 />
-            </div>
-            
-            <div className="w-full md:w-auto">
-                <label className="text-xs text-gray-500 mb-1 block">Kategori</label>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <select
                   value={selectedCategory}
                   onChange={e => setSelectedCategory(e.target.value)}
-                  className="w-full md:w-36 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
-                  <option value="">Tümü</option>
+                  className="px-5 py-3.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-emerald-500 font-medium text-gray-700 transition cursor-pointer min-w-[140px]">
+                  <option value="">📁 Tüm Kategoriler</option>
                   {categories.map(c => (
                     <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
                   ))}
                 </select>
-            </div>
-
-            <div className="w-full md:w-auto">
-                <label className="text-xs text-gray-500 mb-1 block">Şehir</label>
                 <select
                   value={selectedCity}
                   onChange={e => setSelectedCity(e.target.value)}
-                  className="w-full md:w-36 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
-                  <option value="">Tümü</option>
+                  className="px-5 py-3.5 rounded-2xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-emerald-500 font-medium text-gray-700 transition cursor-pointer min-w-[140px]">
+                  <option value="">📍 Tüm Şehirler</option>
                   {cities.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
+              </div>
             </div>
 
-            <div className="w-full md:w-auto flex gap-2">
-                <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Min ₺</label>
-                    <input type="number" placeholder="0" value={minPrice} onChange={e => setMinPrice(e.target.value)}
-                        className="w-20 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition" />
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center pt-4 border-t border-gray-50">
+              <div className="flex flex-wrap gap-4 items-center w-full md:w-auto">
+                <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl ring-1 ring-gray-200 focus-within:ring-2 focus-within:ring-emerald-500 transition">
+                  <input type="number" placeholder="Min ₺" value={minPrice} onChange={e => setMinPrice(e.target.value)}
+                      className="w-24 px-3 py-1.5 bg-transparent border-none focus:outline-none text-sm text-center font-medium text-gray-700 placeholder-gray-400" />
+                  <span className="text-gray-300">-</span>
+                  <input type="number" placeholder="Max ₺" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
+                      className="w-24 px-3 py-1.5 bg-transparent border-none focus:outline-none text-sm text-center font-medium text-gray-700 placeholder-gray-400" />
                 </div>
-                <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Max ₺</label>
-                    <input type="number" placeholder="∞" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
-                        className="w-20 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition" />
-                </div>
-            </div>
 
-            <div className="w-full md:w-auto">
-                <label className="text-xs text-gray-500 mb-1 block">Durum</label>
                 <select value={condition} onChange={e => setCondition(e.target.value)}
-                    className="w-full md:w-32 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
-                    <option value="">Tümü</option>
+                    className="px-4 py-2.5 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-emerald-500 text-sm font-medium text-gray-700 transition cursor-pointer">
+                    <option value="">Tüm Durumlar</option>
                     <option value="new">Sıfır</option>
                     <option value="like_new">Yeni Gibi</option>
                     <option value="good">İyi Durumda</option>
                     <option value="fair">Makul</option>
                 </select>
-            </div>
 
-            <div className="w-full md:w-auto">
-                <label className="text-xs text-gray-500 mb-1 block">Sırala</label>
                 <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                    className="w-full md:w-36 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm transition">
+                    className="px-4 py-2.5 rounded-xl bg-gray-50 border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-emerald-500 text-sm font-medium text-gray-700 transition cursor-pointer">
                     <option value="newest">En Yeni</option>
                     <option value="price_asc">En Ucuz</option>
                     <option value="price_desc">En Pahalı</option>
                 </select>
-            </div>
+              </div>
 
-            <button onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedCity(''); setMinPrice(''); setMaxPrice(''); setCondition(''); setSortBy('newest') }}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition w-full md:w-auto">
-              Temizle ✕
-            </button>
+              <button onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedCity(''); setMinPrice(''); setMaxPrice(''); setCondition(''); setSortBy('newest') }}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 px-4 py-2.5 rounded-xl text-sm font-bold transition w-full md:w-auto">
+                Aramayı Temizle ✕
+              </button>
+            </div>
           </div>
         )}
 
