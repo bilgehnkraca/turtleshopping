@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Category } from '../types'
-import { cities } from '../data/cities'
+import locationsData from '../data/locations.json'
+
+const locationDB = locationsData as any[]
 
 export default function CreateListing() {
   const navigate = useNavigate()
@@ -18,12 +20,41 @@ export default function CreateListing() {
   const [categoryId, setCategoryId] = useState('')
   const [condition, setCondition] = useState('good')
   const [city, setCity] = useState('')
+  const [district, setDistrict] = useState('')
+  const [neighborhood, setNeighborhood] = useState('')
   const [isTradeable, setIsTradeable] = useState(false)
   const [isBargainable, setIsBargainable] = useState(false)
+
+  // Location arrays
+  const [districts, setDistricts] = useState<any[]>([])
+  const [neighborhoods, setNeighborhoods] = useState<any[]>([])
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []))
   }, [])
+
+  // City changed
+  useEffect(() => {
+    setDistrict('')
+    setNeighborhood('')
+    if (city) {
+      const cityData = locationDB.find((c: any) => c.name === city)
+      setDistricts(cityData ? cityData.districts : [])
+    } else {
+      setDistricts([])
+    }
+  }, [city])
+
+  // District changed
+  useEffect(() => {
+    setNeighborhood('')
+    if (district) {
+      const distData = districts.find((d: any) => d.name === district)
+      setNeighborhoods(distData ? distData.neighborhoods : [])
+    } else {
+      setNeighborhoods([])
+    }
+  }, [district, districts])
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []).slice(0, 5)
@@ -44,6 +75,10 @@ export default function CreateListing() {
       newErrors.category = 'Kategori seçin'
     if (!city)
       newErrors.city = 'Şehir seçin'
+    if (!district)
+      newErrors.district = 'İlçe seçin'
+    if (!neighborhood)
+      newErrors.neighborhood = 'Mahalle seçin'
     if (images.length === 0)
       newErrors.images = 'En az 1 fotoğraf ekleyin'
 
@@ -82,6 +117,8 @@ export default function CreateListing() {
       category_id: parseInt(categoryId),
       condition,
       city,
+      district,
+      neighborhood,
       images: imageUrls,
       status: 'pending',
       is_tradeable: isTradeable,
@@ -222,21 +259,43 @@ export default function CreateListing() {
             </select>
           </div>
 
-          {/* Şehir */}
+          {/* Konum */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Şehir <span className="text-red-500">*</span>
-            </label>
-            <select value={city} onChange={e => setCity(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white ${
-                errors.city ? 'border-red-300' : 'border-gray-200'
-              }`}>
-              <option value="">Şehir seç</option>
-              {cities.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-            {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+            <label className="block text-sm font-medium text-gray-700 mb-2">Konum (İl / İlçe / Mahalle)</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <select value={city} onChange={e => setCity(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                  <option value="">İl Seçin</option>
+                  {locationDB.map(c => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+                {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+              </div>
+              
+              <div>
+                <select value={district} onChange={e => setDistrict(e.target.value)} disabled={!city}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100 disabled:opacity-70">
+                  <option value="">İlçe Seçin</option>
+                  {districts.map(d => (
+                    <option key={d.name} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
+                {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district}</p>}
+              </div>
+              
+              <div>
+                <select value={neighborhood} onChange={e => setNeighborhood(e.target.value)} disabled={!district}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100 disabled:opacity-70">
+                  <option value="">Mahalle Seçin</option>
+                  {neighborhoods.map(n => (
+                    <option key={n.name} value={n.name}>{n.name}</option>
+                  ))}
+                </select>
+                {errors.neighborhood && <p className="text-red-500 text-sm mt-1">{errors.neighborhood}</p>}
+              </div>
+            </div>
           </div>
 
           {/* Ekstra Seçenekler */}

@@ -16,7 +16,11 @@ export function useAuth() {
       else setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        window.location.href = '/reset-password'
+      }
+      
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user)
       else {

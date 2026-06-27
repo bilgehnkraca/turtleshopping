@@ -20,11 +20,21 @@ export default function Login() {
     setLoading(true)
     setError('')
     setSuccessMsg('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     
     if (error) {
       setError(error.message === 'Invalid login credentials' ? 'E-posta veya şifre hatalı.' : error.message)
-    } else {
+    } else if (data.user) {
+      // Eğer kullanıcı hesabı Supabase panelinden manuel açıldıysa profile tablosunda kaydı olmayabilir.
+      // Eksikse otomatik oluşturalım:
+      const { data: profile } = await supabase.from('profiles').select('id').eq('id', data.user.id).single()
+      if (!profile) {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          username: email.split('@')[0],
+          full_name: email.split('@')[0],
+        })
+      }
       navigate('/')
     }
     setLoading(false)

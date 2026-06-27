@@ -38,6 +38,11 @@ export default function ListingDetail() {
   const [reportSent, setReportSent] = useState(false)
   const [similarListings, setSimilarListings] = useState<any[]>([])
 
+  // Teklif State
+  const [showOfferModal, setShowOfferModal] = useState(false)
+  const [offerAmount, setOfferAmount] = useState('')
+  const [offerLoading, setOfferLoading] = useState(false)
+
   useEffect(() => {
     fetchListing()
     supabase.auth.getUser().then(({ data }) => {
@@ -157,6 +162,62 @@ export default function ListingDetail() {
       })
     }
     setVerifyLoading(false)
+  }
+
+  async function handleOfferSubmit() {
+    if (!currentUser) { navigate('/login'); return }
+    if (!offerAmount || isNaN(Number(offerAmount))) return alert('Geçerli bir tutar girin.')
+    if (!listing) return
+
+    setOfferLoading(true)
+    try {
+      // 1. Teklifi kaydet
+      const { error: offerError } = await supabase.from('offers').insert({
+        listing_id: id,
+        buyer_id: currentUser,
+        seller_id: listing.user_id,
+        amount: Number(offerAmount)
+      })
+
+      if (offerError) throw offerError
+
+      // 2. Mesaj olarak sohbete düşür
+      let convId
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('listing_id', id)
+        .eq('buyer_id', currentUser)
+        .maybeSingle()
+
+      if (existing) {
+        convId = existing.id
+      } else {
+        const { data: newConv } = await supabase.from('conversations').insert({
+          listing_id: id,
+          buyer_id: currentUser,
+          seller_id: listing.user_id,
+        }).select().single()
+        if (newConv) convId = newConv.id
+      }
+
+      if (convId) {
+        await supabase.from('messages').insert({
+          conversation_id: convId,
+          sender_id: currentUser,
+          content: `🎁 SİSTEM: Alıcı bu ürün için ${Number(offerAmount).toLocaleString('tr-TR')} ₺ teklif etti.`
+        })
+      }
+
+      setShowOfferModal(false)
+      setOfferAmount('')
+      alert('Teklifiniz başarıyla satıcıya iletildi!')
+    } catch (e: any) {
+      console.error(e)
+      alert('Teklif gönderilirken bir sorun oluştu.')
+    } finally {
+      setOfferLoading(false)
+    }
   }
 
   async function handleReport() {
@@ -372,10 +433,21 @@ export default function ListingDetail() {
 
             {!isOwner && (
               <>
-                <button onClick={handleContact}
-                  className="w-full bg-emerald-500 text-white py-3 rounded-xl font-medium hover:bg-emerald-600 transition text-sm mb-3">
-                  Satıcıyla İletişime Geç
-                </button>
+                <div className="flex gap-2 mb-3">
+                  <button onClick={() => {
+                    if (!currentUser) { navigate('/login'); return }
+                    setShowOfferModal(true)
+                  }}
+                    className="flex-1 bg-white border-2 border-emerald-500 text-emerald-600 py-3 rounded-xl font-bold hover:bg-emerald-50 transition text-sm">
+                    💰 Teklif Ver
+                  </button>
+                  
+                  <button onClick={handleContact}
+                    className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition text-sm">
+                    💬 Mesaj At
+                  </button>
+                </div>
+                
                 <button onClick={() => {
                   if (!currentUser) { navigate('/login'); return }
                   setShowReportModal(true)
@@ -497,6 +569,40 @@ export default function ListingDetail() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {showOfferModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">💰 Teklif Ver</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Satıcıya iletmek istediğiniz teklifi aşağıya girin. İlanın güncel fiyatı: <b>{listing.price.toLocaleString('tr-TR')} ₺</b>
+            </p>
+
+            <div className="relative mb-6">
+              <span className="absolute left-4 top-3 text-gray-500 font-bold text-lg">₺</span>
+              <input
+                type="number"
+                value={offerAmount}
+                onChange={e => setOfferAmount(e.target.value)}
+                placeholder="0"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={handleOfferSubmit} disabled={!offerAmount || offerLoading}
+                className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition disabled:opacity-50 text-sm">
+                {offerLoading ? 'Gönderiliyor...' : 'Teklifi Gönder'}
+              </button>
+              <button onClick={() => setShowOfferModal(false)}
+                className="px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-500 hover:text-gray-800 transition font-medium">
+                İptal
+              </button>
+            </div>
           </div>
         </div>
       )}

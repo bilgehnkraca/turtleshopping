@@ -6,6 +6,7 @@ export interface Profile {
   phone?: string
   phone_verified?: boolean
   city?: string
+  expo_push_token?: string
   rating: number
   review_count: number
   created_at: string
@@ -30,6 +31,8 @@ export interface Listing {
   condition: 'new' | 'like_new' | 'good' | 'fair'
   status: 'active' | 'sold' | 'deleted'
   city?: string
+  district?: string
+  neighborhood?: string
   images?: string[]
   view_count: number
   is_tradeable?: boolean
@@ -80,4 +83,25 @@ export interface AppNotification {
   message: string
   is_read: boolean
   created_at: string
+}
+
+export interface Favorite {
+  id: string
+  user_id: string
+  listing_id: string
+  created_at: string
+  listings?: Listing
+}
+
+export interface Offer {
+  id: string
+  listing_id: string
+  buyer_id: string
+  seller_id: string
+  amount: number
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn'
+  created_at: string
+  updated_at: string
+  listings?: Listing
+  profiles?: Profile
 }

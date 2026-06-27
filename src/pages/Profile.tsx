@@ -415,7 +415,7 @@ export default function ProfilePage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
             <h3 className="text-lg font-bold text-gray-800 mb-2">Telefonunu Doğrula</h3>
             <p className="text-sm text-gray-500 mb-4">
-              <strong>{profile?.phone}</strong> numarasına gönderilen 6 haneli doğrulama kodunu girin. (Test modu: Kodu alert olarak gördünüz)
+              <strong>{profile?.phone}</strong> numarasına bir mesaj (SMS) gönderdik. Lütfen mesajdaki <strong>6 Haneli Doğrulama Kodunu</strong> aşağıdaki kutucuğa girin. Telefon numaranızı YAZMAYIN. (Test modu: Kodu alert olarak gördünüz)
             </p>
             
             {otpError && (
@@ -429,7 +429,7 @@ export default function ProfilePage() {
                 type="text"
                 value={otpCode}
                 onChange={e => setOtpCode(e.target.value)}
-                placeholder="000000"
+                placeholder="6 Haneli Kodu Girin"
                 maxLength={6}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />

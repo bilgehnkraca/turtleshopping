@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { cities } from '../data/cities'
 import type { Category } from '../types'
+import locationsData from '../data/locations.json'
+
+const locationDB = locationsData as any[]
 
 export default function EditListing() {
   const { id } = useParams()
@@ -18,7 +20,13 @@ export default function EditListing() {
   const [categoryId, setCategoryId] = useState('')
   const [condition, setCondition] = useState('good')
   const [city, setCity] = useState('')
+  const [district, setDistrict] = useState('')
+  const [neighborhood, setNeighborhood] = useState('')
   const [status, setStatus] = useState('active')
+
+  // Location arrays
+  const [districts, setDistricts] = useState<any[]>([])
+  const [neighborhoods, setNeighborhoods] = useState<any[]>([])
 
   useEffect(() => {
     fetchListing()
@@ -46,9 +54,31 @@ export default function EditListing() {
     setCategoryId(String(data.category_id))
     setCondition(data.condition)
     setCity(data.city || '')
+    setDistrict(data.district || '')
+    setNeighborhood(data.neighborhood || '')
     setStatus(data.status)
     setLoading(false)
   }
+
+  // City changed
+  useEffect(() => {
+    if (city) {
+      const cityData = locationDB.find((c: any) => c.name === city)
+      setDistricts(cityData ? cityData.districts : [])
+    } else {
+      setDistricts([])
+    }
+  }, [city])
+
+  // District changed
+  useEffect(() => {
+    if (district) {
+      const distData = districts.find((d: any) => d.name === district)
+      setNeighborhoods(distData ? distData.neighborhoods : [])
+    } else {
+      setNeighborhoods([])
+    }
+  }, [district, districts])
 
   async function handleSave() {
     setSaving(true)
@@ -61,6 +91,8 @@ export default function EditListing() {
       category_id: parseInt(categoryId),
       condition,
       city,
+      district,
+      neighborhood,
       status,
       updated_at: new Date().toISOString(),
     }).eq('id', id)
@@ -142,15 +174,40 @@ export default function EditListing() {
             </select>
           </div>
 
+          {/* Konum */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Şehir</label>
-            <select value={city} onChange={e => setCity(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-              <option value="">Şehir seç</option>
-              {cities.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Konum (İl / İlçe / Mahalle)</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <select value={city} onChange={e => { setCity(e.target.value); setDistrict(''); setNeighborhood('') }}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
+                  <option value="">İl Seçin</option>
+                  {locationDB.map(c => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <select value={district} onChange={e => { setDistrict(e.target.value); setNeighborhood('') }} disabled={!city}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100 disabled:opacity-70">
+                  <option value="">İlçe Seçin</option>
+                  {districts.map(d => (
+                    <option key={d.name} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <select value={neighborhood} onChange={e => setNeighborhood(e.target.value)} disabled={!district}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100 disabled:opacity-70">
+                  <option value="">Mahalle Seçin</option>
+                  {neighborhoods.map(n => (
+                    <option key={n.name} value={n.name}>{n.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           <div>
