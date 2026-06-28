@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Package, CheckCircle, Clock } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import ShopkeeperLayout from '../../layouts/ShopkeeperLayout';
 
 const MetricCard = ({ title, value, subtext, isPositive, trend }: any) => (
@@ -23,7 +23,6 @@ const MetricCard = ({ title, value, subtext, isPositive, trend }: any) => (
 
 export default function ShopkeeperDashboard() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ incoming: 0, verified: 0, earnings: 0 });
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
 
@@ -34,7 +33,6 @@ export default function ShopkeeperDashboard() {
   }, [user]);
 
   async function fetchDashboardData() {
-    setLoading(true);
     const { data: shop } = await supabase.from('shop_locations').select('id').eq('profile_id', user?.id).maybeSingle();
 
     if (shop) {
@@ -63,7 +61,6 @@ export default function ShopkeeperDashboard() {
         setRecentTransactions(txs.slice(0, 5));
       }
     }
-    setLoading(false);
   }
 
   // Örnek veriler (Gerçek zamanlı grafik verisi henüz yok)

@@ -44,7 +44,7 @@ export default function ShopkeeperTransactions() {
     // İlgili kodu ara (eski shop_id veya yeni seller_shop_id / buyer_shop_id)
     const { data: transactions, error } = await supabase
       .from('transactions')
-      .select('id, status, drop_off_code, pick_up_code')
+      .select('id, status, drop_off_code, pick_up_code, buyer_id')
       .or(`shop_id.eq.${shop.id},seller_shop_id.eq.${shop.id},buyer_shop_id.eq.${shop.id}`)
       .or(`drop_off_code.eq.${code},pick_up_code.eq.${code}`)
       .neq('status', 'cancelled');

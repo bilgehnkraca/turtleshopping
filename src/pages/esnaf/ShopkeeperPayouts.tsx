@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import ShopkeeperLayout from '../../layouts/ShopkeeperLayout';
-import { CreditCard, Wallet, TrendingUp, DollarSign } from 'lucide-react';
+import { Wallet, TrendingUp, DollarSign } from 'lucide-react';
 
 export default function ShopkeeperPayouts() {
   const { user } = useAuth();

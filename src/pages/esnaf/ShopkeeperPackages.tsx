@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import ShopkeeperLayout from '../../layouts/ShopkeeperLayout';
-import { Package, Truck, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Package, Truck, CheckCircle2 } from 'lucide-react';
 
 export default function ShopkeeperPackages() {
   const { user } = useAuth();

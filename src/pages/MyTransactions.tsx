@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Package, Clock, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
+import { ShieldCheck, Package, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 
 export default function MyTransactions() {
   const { user } = useAuth();
