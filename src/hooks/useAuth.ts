@@ -56,5 +56,8 @@ export function useAuth() {
     await supabase.auth.signOut()
   }
 
-  return { user, profile, loading, signOut, isPointOwner }
+  const isShopkeeper = profile?.role === 'shopkeeper';
+  const isAdmin = profile?.role === 'admin';
+
+  return { user, profile, loading, signOut, isPointOwner, isShopkeeper, isAdmin }
 }

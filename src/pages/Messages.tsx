@@ -8,14 +8,6 @@ export default function Messages() {
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { navigate('/login'); return }
-      setCurrentUser(data.user.id)
-      fetchConversations(data.user.id)
-    })
-  }, [])
-
   async function fetchConversations(userId: string) {
     const { data } = await supabase
       .from('conversations')
@@ -25,6 +17,14 @@ export default function Messages() {
     setConversations(data || [])
     setLoading(false)
   }
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) { navigate('/login'); return }
+      setCurrentUser(data.user.id)
+      fetchConversations(data.user.id)
+    })
+  }, [])
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

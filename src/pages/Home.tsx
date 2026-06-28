@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth'
 import { cities } from '../data/cities'
 
 export default function Home() {
-  const { user, signOut, isPointOwner } = useAuth()
+  const { user, signOut, isPointOwner, isShopkeeper } = useAuth()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -82,7 +82,12 @@ export default function Home() {
               <>
                 {isPointOwner && (
                   <Link to="/point-panel" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                    <Store className="w-4 h-4" /> Nokta Paneli
+                    <Store className="w-4 h-4" /> Nokta Paneli (Eski)
+                  </Link>
+                )}
+                {isShopkeeper && (
+                  <Link to="/esnaf/dashboard" className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full text-sm font-bold transition">
+                    <Store className="w-4 h-4" /> B2B Esnaf Paneli
                   </Link>
                 )}
                 <Link to="/notifications" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition relative">

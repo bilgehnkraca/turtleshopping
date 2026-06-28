@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Listing } from '../types'
+import { ShieldCheck, X } from 'lucide-react'
 
 const conditionLabels: Record<string, string> = {
   new: 'Sıfır',
@@ -43,15 +44,23 @@ export default function ListingDetail() {
   const [offerAmount, setOfferAmount] = useState('')
   const [offerLoading, setOfferLoading] = useState(false)
 
-  useEffect(() => {
-    fetchListing()
-    supabase.auth.getUser().then(({ data }) => {
-      const userId = data.user?.id || null
-      setCurrentUser(userId)
-      if (userId) checkFavorite(userId)
-    })
-    supabase.from('turtle_points').select('*').eq('is_active', true).then(({ data }) => setTurtlePoints(data || []))
-  }, [id])
+  // Satın Alma (Escrow) State
+  const [showBuyModal, setShowBuyModal] = useState(false)
+  const [shops, setShops] = useState<any[]>([])
+  const [selectedShop, setSelectedShop] = useState('')
+  const [buyLoading, setBuyLoading] = useState(false)
+
+  async function fetchSimilarListings(categoryId: number, currentId: string) {
+    const { data, error } = await supabase
+      .from('listings')
+      .select('*, categories(name, icon)')
+      .eq('category_id', categoryId)
+      .eq('status', 'active')
+      .neq('id', currentId)
+      .limit(4)
+    console.log('similar:', data, error)
+    setSimilarListings(data || [])
+  }
 
   async function fetchListing() {
     const { data } = await supabase
@@ -77,18 +86,6 @@ export default function ListingDetail() {
     }
   }
 
-  async function fetchSimilarListings(categoryId: number, currentId: string) {
-  const { data, error } = await supabase
-    .from('listings')
-    .select('*, categories(name, icon)')
-    .eq('category_id', categoryId)
-    .eq('status', 'active')
-    .neq('id', currentId)
-    .limit(4)
-  console.log('similar:', data, error)
-  setSimilarListings(data || [])
-}
-
   async function checkFavorite(userId: string) {
     const { data } = await supabase
       .from('favorites')
@@ -98,6 +95,17 @@ export default function ListingDetail() {
       .maybeSingle()
     setIsFavorited(!!data)
   }
+
+  useEffect(() => {
+    fetchListing()
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data.user?.id || null
+      setCurrentUser(userId)
+      if (userId) checkFavorite(userId)
+    })
+    supabase.from('turtle_points').select('*').eq('is_active', true).then(({ data }) => setTurtlePoints(data || []))
+    supabase.from('shop_locations').select('*').eq('is_active', true).then(({ data }) => setShops(data || []))
+  }, [id])
 
   async function toggleFavorite() {
     if (!currentUser) { navigate('/login'); return }
@@ -217,6 +225,44 @@ export default function ListingDetail() {
       alert('Teklif gönderilirken bir sorun oluştu.')
     } finally {
       setOfferLoading(false)
+    }
+  }
+
+  async function handleSecureBuy() {
+    if (!currentUser) { navigate('/login'); return }
+    if (!selectedShop) return alert('Lütfen teslimat için bir TurtleNokta seçin.')
+    if (!listing) return
+
+    setBuyLoading(true)
+    try {
+      const commission = listing.price * 0.05 // %5 Komisyon simülasyonu
+      const dropOffCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+      const pickUpCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+      const { error } = await supabase.from('transactions').insert({
+        listing_id: id,
+        buyer_id: currentUser,
+        seller_id: listing.user_id,
+        shop_id: selectedShop,
+        price: listing.price,
+        commission: commission,
+        status: 'pending',
+        drop_off_code: dropOffCode,
+        pick_up_code: pickUpCode
+      })
+
+      if (error) throw error
+
+      setShowBuyModal(false)
+      alert('Ödemeniz havuza alındı! Satıcının ürünü seçtiğiniz TurtleNokta\'ya bırakması bekleniyor.')
+      
+      // Siparişlerin görüntülendiği bir yer olmalı ama şimdilik anasayfaya yönlendirelim
+      navigate('/')
+    } catch (e: any) {
+      console.error(e)
+      alert('İşlem sırasında bir hata oluştu.')
+    } finally {
+      setBuyLoading(false)
     }
   }
 
@@ -433,6 +479,15 @@ export default function ListingDetail() {
 
             {!isOwner && (
               <>
+                <button onClick={() => {
+                  if (!currentUser) { navigate('/login'); return }
+                  setShowBuyModal(true)
+                }}
+                  className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 mb-3">
+                  <ShieldCheck size={20} />
+                  TurtleGüvence ile Satın Al
+                </button>
+
                 <div className="flex gap-2 mb-3">
                   <button onClick={() => {
                     if (!currentUser) { navigate('/login'); return }
@@ -569,6 +624,60 @@ export default function ListingDetail() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Satın Alma (Escrow Simülasyonu) Modal'ı */}
+      {showBuyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <ShieldCheck className="text-emerald-500" />
+                Güvenli Ödeme
+              </h2>
+              <button onClick={() => setShowBuyModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <p className="text-gray-600 text-sm mb-4">
+              Ürün bedeli havuz hesabımıza alınır. Siz ürünü <b>TurtleNokta</b>'da görüp onaylayana kadar satıcıya para aktarılmaz.
+            </p>
+
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-4">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-600">Ürün Bedeli:</span>
+                <span className="font-semibold">{listing?.price.toLocaleString('tr-TR')} ₺</span>
+              </div>
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-600">Hizmet Bedeli (%5):</span>
+                <span className="font-semibold">{(listing ? listing.price * 0.05 : 0).toLocaleString('tr-TR')} ₺</span>
+              </div>
+              <div className="flex justify-between text-base border-t border-emerald-200 mt-2 pt-2">
+                <span className="font-bold text-gray-800">Toplam:</span>
+                <span className="font-bold text-emerald-600">{(listing ? listing.price * 1.05 : 0).toLocaleString('tr-TR')} ₺</span>
+              </div>
+            </div>
+
+            <label className="block text-sm font-medium text-gray-700 mb-2">1. Teslimat Noktası Seçin (TurtleNokta)</label>
+            <select value={selectedShop} onChange={e => setSelectedShop(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white mb-4">
+              <option value="">En yakın noktayı seçin...</option>
+              {shops.map(p => (
+                <option key={p.id} value={p.id}>{p.shop_name} — {p.district}, {p.city}</option>
+              ))}
+            </select>
+
+            <label className="block text-sm font-medium text-gray-700 mb-2">2. Kart Bilgileri (Simülasyon)</label>
+            <input type="text" placeholder="Kart Üzerindeki İsim" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm mb-2 bg-gray-50" />
+            <input type="text" placeholder="Kart Numarası" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm mb-4 bg-gray-50" />
+
+            <button onClick={handleSecureBuy} disabled={!selectedShop || buyLoading}
+              className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed">
+              {buyLoading ? 'İşleniyor...' : 'Ödemeyi Tamamla ve Beklemeye Al'}
+            </button>
           </div>
         </div>
       )}

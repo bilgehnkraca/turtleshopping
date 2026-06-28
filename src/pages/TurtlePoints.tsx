@@ -7,10 +7,6 @@ export default function TurtlePoints() {
   const [loading, setLoading] = useState(true)
   const [selectedCity, setSelectedCity] = useState('')
 
-  useEffect(() => {
-    fetchPoints()
-  }, [selectedCity])
-
   async function fetchPoints() {
     let query = supabase
       .from('turtle_points')
@@ -24,6 +20,10 @@ export default function TurtlePoints() {
     setPoints(data || [])
     setLoading(false)
   }
+
+  useEffect(() => {
+    fetchPoints()
+  }, [selectedCity])
 
   const cities = [...new Set(points.map(p => p.city))].sort()
 

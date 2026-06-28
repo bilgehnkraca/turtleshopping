@@ -9,12 +9,15 @@ export default function PointPanel() {
   const [point, setPoint] = useState<any>(null)
   const [notes, setNotes] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { navigate('/login'); return }
-      fetchPoint(data.user.id)
-    })
-  }, [])
+  async function fetchVerifications(pointId: number) {
+    const { data } = await supabase
+      .from('listing_verifications')
+      .select('*, listings(title, price, images, description, condition), profiles!listing_verifications_verified_by_fkey(username)')
+      .eq('point_id', pointId)
+      .order('created_at', { ascending: false })
+    setVerifications(data || [])
+    setLoading(false)
+  }
 
   async function fetchPoint(userId: string) {
     const { data } = await supabase
@@ -46,15 +49,12 @@ export default function PointPanel() {
     fetchVerifications(data.id)
   }
 
-  async function fetchVerifications(pointId: number) {
-    const { data } = await supabase
-      .from('listing_verifications')
-      .select('*, listings(title, price, images, description, condition), profiles!listing_verifications_verified_by_fkey(username)')
-      .eq('point_id', pointId)
-      .order('created_at', { ascending: false })
-    setVerifications(data || [])
-    setLoading(false)
-  }
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) { navigate('/login'); return }
+      fetchPoint(data.user.id)
+    })
+  }, [])
 
   async function approveVerification(ver: any) {
     const { data: { user } } = await supabase.auth.getUser()

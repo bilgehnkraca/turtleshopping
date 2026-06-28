@@ -19,11 +19,17 @@ import ListingSubmitted from './pages/ListingSubmitted'
 import Favorites from './pages/Favorites'
 import Notifications from './pages/Notifications'
 import ResetPassword from './pages/ResetPassword'
+import ShopkeeperDashboard from './pages/esnaf/ShopkeeperDashboard'
+import ShopkeeperTransactions from './pages/esnaf/ShopkeeperTransactions'
+import AdminDashboard from './pages/admin/AdminDashboard'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
+        <Route path="/esnaf/dashboard" element={<ShopkeeperDashboard />} />
+        <Route path="/esnaf/barkod" element={<ShopkeeperTransactions />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

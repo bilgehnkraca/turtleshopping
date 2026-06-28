@@ -9,12 +9,6 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications()
-    }
-  }, [user])
-
   async function fetchNotifications() {
     setLoading(true)
     const { data } = await supabase
@@ -37,6 +31,12 @@ export default function Notifications() {
       }
     }
   }
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications()
+    }
+  }, [user])
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
