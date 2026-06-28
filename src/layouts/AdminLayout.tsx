@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, Users, LayoutDashboard, ShieldAlert, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';

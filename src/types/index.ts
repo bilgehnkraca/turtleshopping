@@ -10,6 +10,7 @@ export interface Profile {
   rating: number
   review_count: number
   created_at: string
+  role?: string
 }
 
 export interface Category {

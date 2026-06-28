@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Package, CheckCircle, CreditCard, Settings, HelpCircle, ScanLine, Bell, Search } from 'lucide-react';
 
