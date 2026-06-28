@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, Package, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { TrendingUp, Package, CheckCircle, Clock } from 'lucide-react';
 import ShopkeeperLayout from '../../layouts/ShopkeeperLayout';
 
 const data = [
@@ -151,7 +150,7 @@ export default function ShopkeeperDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentPackages.map((pkg, i) => (
+                {recentPackages.map((pkg) => (
                   <tr key={pkg.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 text-gray-900 font-medium">{pkg.id}</td>
                     <td className="px-6 py-4 text-gray-600">{pkg.buyer}</td>
