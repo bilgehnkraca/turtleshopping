@@ -1,47 +1,86 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Package, CheckCircle, Clock } from 'lucide-react';
 import ShopkeeperLayout from '../../layouts/ShopkeeperLayout';
-
-const data = [
-  { time: '08:00', value: 20 },
-  { time: '09:00', value: 45 },
-  { time: '10:00', value: 35 },
-  { time: '11:00', value: 85 },
-  { time: '12:00', value: 130 },
-  { time: '14:00', value: 90 },
-  { time: '16:00', value: 65 },
-  { time: '18:00', value: 85 },
-  { time: '20:00', value: 40 },
-];
-
-const pieData = [
-  { name: 'Doğrulandı', value: 72, color: '#10b981' }, // emerald-500
-  { name: 'Bekliyor', value: 18, color: '#f59e0b' },   // amber-500
-  { name: 'Sorunlu', value: 10, color: '#ef4444' },    // red-500
-];
-
-const recentPackages = [
-  { id: 'TN98765432', buyer: 'Ayşe Yılmaz', date: '25 Eki 14:30', status: 'verified', statusText: 'Doğrulandı' },
-  { id: 'TN98765433', buyer: 'Mehmet Demir', date: '25 Eki 15:15', status: 'pending', statusText: 'Bekliyor' },
-  { id: 'TN98765434', buyer: 'Zeynep Kaya', date: '25 Eki 16:40', status: 'verified', statusText: 'Doğrulandı' },
-  { id: 'TN98765435', buyer: 'Ali Can', date: '25 Eki 17:05', status: 'incoming', statusText: 'Yolda' },
-];
 
 const MetricCard = ({ title, value, subtext, isPositive, trend }: any) => (
   <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col">
     <div className="text-gray-500 font-medium mb-4">{title}</div>
     <div className="flex items-end justify-between mt-auto">
       <div className="text-4xl font-bold text-gray-900">{value}</div>
-      <div className={`flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-red-500'} font-medium`}>
-        <TrendingUp size={16} className={!isPositive ? 'rotate-180' : ''} />
-        {trend}
-      </div>
+      {trend && (
+        <div className={`flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-red-500'} font-medium`}>
+          <TrendingUp size={16} className={!isPositive ? 'rotate-180' : ''} />
+          {trend}
+        </div>
+      )}
     </div>
     <div className="text-sm text-gray-400 mt-2">{subtext}</div>
   </div>
 );
 
 export default function ShopkeeperDashboard() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ incoming: 0, verified: 0, earnings: 0 });
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
+
+  async function fetchDashboardData() {
+    setLoading(true);
+    const { data: shop } = await supabase.from('shop_locations').select('id').eq('profile_id', user?.id).maybeSingle();
+
+    if (shop) {
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select(`*, listings(title), buyer:profiles!transactions_buyer_id_fkey(full_name, username)`)
+        .or(`seller_shop_id.eq.${shop.id},buyer_shop_id.eq.${shop.id}`)
+        .order('updated_at', { ascending: false });
+
+      if (txs) {
+        let incoming = 0;
+        let verifiedCount = 0;
+        let totalEarnings = 0;
+
+        txs.forEach(tx => {
+          if (tx.buyer_shop_id === shop.id && tx.status !== 'verified') incoming++;
+          if (tx.status === 'verified') {
+            verifiedCount++;
+            const commission = tx.commission || (tx.price * 0.05);
+            if (tx.seller_shop_id === shop.id) totalEarnings += commission * 0.3;
+            if (tx.buyer_shop_id === shop.id) totalEarnings += commission * 0.3;
+          }
+        });
+
+        setStats({ incoming, verified: verifiedCount, earnings: totalEarnings });
+        setRecentTransactions(txs.slice(0, 5));
+      }
+    }
+    setLoading(false);
+  }
+
+  // Örnek veriler (Gerçek zamanlı grafik verisi henüz yok)
+  const data = [
+    { time: '08:00', value: 20 },
+    { time: '10:00', value: 35 },
+    { time: '12:00', value: 130 },
+    { time: '14:00', value: 90 },
+    { time: '16:00', value: 65 },
+    { time: '18:00', value: 85 },
+  ];
+
+  const pieData = [
+    { name: 'Doğrulandı', value: stats.verified, color: '#10b981' },
+    { name: 'Bekliyor', value: stats.incoming, color: '#f59e0b' },
+  ];
+
   return (
     <ShopkeeperLayout>
       <div className="max-w-7xl mx-auto space-y-6">
@@ -49,25 +88,25 @@ export default function ShopkeeperDashboard() {
         {/* Metrikler */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard 
-            title="Gelen Paketler" 
-            value="142" 
-            subtext="Bugün teslim alınan toplam" 
+            title="Bekleyen Paketler" 
+            value={stats.incoming.toString()} 
+            subtext="Şu an dükkanda işlem bekleyen" 
             isPositive={true} 
-            trend="+15%" 
+            trend={null} 
           />
           <MetricCard 
-            title="Doğrulanan Ürünler" 
-            value="128" 
-            subtext="Doğrulama başarı oranı: %90.1" 
+            title="Tamamlanan İşlemler" 
+            value={stats.verified.toString()} 
+            subtext="Tüm zamanlar" 
             isPositive={true} 
-            trend="+8%" 
+            trend={null} 
           />
           <MetricCard 
-            title="Bekleyen Ödemeler (Hakediş)" 
-            value="₺3,450" 
-            subtext="48 İşlemden bekleyen havuz ödemesi" 
+            title="Toplam Hakediş" 
+            value={`₺${stats.earnings.toLocaleString('tr-TR', {minimumFractionDigits: 2})}`} 
+            subtext="Tamamlanan işlemlerden kazanılan" 
             isPositive={true} 
-            trend="+12%" 
+            trend={null} 
           />
         </div>
 
@@ -75,7 +114,7 @@ export default function ShopkeeperDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-800 mb-6">Gelen Paket Akışı</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-6">İşlem Hacmi (Simülasyon)</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data}>
@@ -98,7 +137,7 @@ export default function ShopkeeperDashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col items-center">
-            <h3 className="text-lg font-bold text-gray-800 self-start w-full mb-2">Paket Durumu</h3>
+            <h3 className="text-lg font-bold text-gray-800 self-start w-full mb-2">Dağılım</h3>
             <div className="h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -123,7 +162,7 @@ export default function ShopkeeperDashboard() {
                 <div key={item.name} className="flex flex-col items-center">
                   <div className="flex items-center gap-1.5 mb-1">
                     <div className="w-3 h-3 rounded-full" style={{backgroundColor: item.color}}></div>
-                    <span className="text-sm font-bold text-gray-800">%{item.value}</span>
+                    <span className="text-sm font-bold text-gray-800">{item.value}</span>
                   </div>
                   <span className="text-xs text-gray-500">{item.name}</span>
                 </div>
@@ -136,47 +175,35 @@ export default function ShopkeeperDashboard() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <h3 className="text-lg font-bold text-gray-800">Son İşlemler</h3>
-            <button className="text-sm text-emerald-600 font-medium hover:text-emerald-700">Tümünü Gör</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-gray-400 text-sm border-b border-gray-100">
-                  <th className="font-medium px-6 py-4">Takip No</th>
-                  <th className="font-medium px-6 py-4">Alıcı</th>
+                  <th className="font-medium px-6 py-4">Takip/İşlem No</th>
+                  <th className="font-medium px-6 py-4">Ürün / Alıcı</th>
                   <th className="font-medium px-6 py-4">Geliş Tarihi</th>
                   <th className="font-medium px-6 py-4">Durum</th>
-                  <th className="font-medium px-6 py-4">İşlem</th>
                 </tr>
               </thead>
               <tbody>
-                {recentPackages.map((pkg) => (
-                  <tr key={pkg.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 text-gray-900 font-medium">{pkg.id}</td>
-                    <td className="px-6 py-4 text-gray-600">{pkg.buyer}</td>
-                    <td className="px-6 py-4 text-gray-500 text-sm">{pkg.date}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-                        pkg.status === 'verified' ? 'bg-emerald-100 text-emerald-700' : 
-                        pkg.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {pkg.status === 'verified' && <CheckCircle size={14} />}
-                        {pkg.status === 'pending' && <Clock size={14} />}
-                        {pkg.status === 'incoming' && <Package size={14} />}
-                        {pkg.statusText}
-                      </span>
+                {recentTransactions.map((tx, idx) => (
+                  <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
+                    <td className="px-6 py-4 font-mono text-gray-600">{tx.logistics_tracking_no || `#${tx.id.substring(0,8)}`}</td>
+                    <td className="px-6 py-4 text-gray-800">
+                      <div className="font-medium">{tx.listings?.title}</div>
+                      <div className="text-xs text-gray-500">{tx.buyer?.full_name || tx.buyer?.username}</div>
                     </td>
+                    <td className="px-6 py-4 text-gray-500">{new Date(tx.created_at).toLocaleDateString('tr-TR')}</td>
                     <td className="px-6 py-4">
-                      {pkg.status === 'pending' ? (
-                        <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-200">
-                          Doğrula & Teslim Et
-                        </button>
-                      ) : (
-                        <button className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                          Detay
-                        </button>
-                      )}
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        tx.status === 'verified' ? 'bg-emerald-100 text-emerald-700' :
+                        tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        tx.status === 'in_transit' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {tx.status === 'verified' ? 'Doğrulandı' : tx.status === 'pending' ? 'Bekliyor' : tx.status === 'in_transit' ? 'Yolda' : tx.status}
+                      </span>
                     </td>
                   </tr>
                 ))}

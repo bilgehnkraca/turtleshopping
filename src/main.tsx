@@ -21,7 +21,10 @@ import Notifications from './pages/Notifications'
 import ResetPassword from './pages/ResetPassword'
 import ShopkeeperDashboard from './pages/esnaf/ShopkeeperDashboard'
 import ShopkeeperTransactions from './pages/esnaf/ShopkeeperTransactions'
+import ShopkeeperPackages from './pages/esnaf/ShopkeeperPackages'
+import ShopkeeperPayouts from './pages/esnaf/ShopkeeperPayouts'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import MyTransactions from './pages/MyTransactions'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -29,6 +32,8 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/esnaf/dashboard" element={<ShopkeeperDashboard />} />
         <Route path="/esnaf/barkod" element={<ShopkeeperTransactions />} />
+        <Route path="/esnaf/paketler" element={<ShopkeeperPackages />} />
+        <Route path="/esnaf/odemeler" element={<ShopkeeperPayouts />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -47,6 +52,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/transactions" element={<MyTransactions />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

@@ -243,7 +243,7 @@ export default function ListingDetail() {
         listing_id: id,
         buyer_id: currentUser,
         seller_id: listing.user_id,
-        shop_id: selectedShop,
+        buyer_shop_id: selectedShop,
         price: listing.price,
         commission: commission,
         status: 'pending',
@@ -653,8 +653,9 @@ export default function ListingDetail() {
               </button>
             </div>
             
-            <p className="text-gray-600 text-sm mb-4">
-              Ürün bedeli havuz hesabımıza alınır. Siz ürünü <b>TurtleNokta</b>'da görüp onaylayana kadar satıcıya para aktarılmaz.
+            <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+              Ödeme yapmak için acele etmeyin! Satıcı ürünü kendi <b>TurtleNokta</b>'sına bıraktığında, teknisyenlerimiz ücretsiz bir ekspertiz raporu hazırlayacak. 
+              Raporu inceleyip onayladıktan sonra ödemenizi güvenli havuza (Escrow) yapabilirsiniz.
             </p>
 
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-4">
@@ -672,22 +673,18 @@ export default function ListingDetail() {
               </div>
             </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-2">1. Teslimat Noktası Seçin (TurtleNokta)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Teslimat Noktası Seçin (TurtleNokta)</label>
             <select value={selectedShop} onChange={e => setSelectedShop(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white mb-4">
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white mb-6">
               <option value="">En yakın noktayı seçin...</option>
               {shops.map(p => (
                 <option key={p.id} value={p.id}>{p.shop_name} — {p.district}, {p.city}</option>
               ))}
             </select>
 
-            <label className="block text-sm font-medium text-gray-700 mb-2">2. Kart Bilgileri (Simülasyon)</label>
-            <input type="text" placeholder="Kart Üzerindeki İsim" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm mb-2 bg-gray-50" />
-            <input type="text" placeholder="Kart Numarası" className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm mb-4 bg-gray-50" />
-
             <button onClick={handleSecureBuy} disabled={!selectedShop || buyLoading}
               className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed">
-              {buyLoading ? 'İşleniyor...' : 'Ödemeyi Tamamla ve Beklemeye Al'}
+              {buyLoading ? 'İşleniyor...' : 'Satıcıya İstek Gönder (Henüz Ödeme Yok)'}
             </button>
           </div>
         </div>

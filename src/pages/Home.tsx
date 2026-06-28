@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Store, MapPin, Bell, MessageSquare, Heart, User as UserIcon, LogOut, PlusCircle } from 'lucide-react'
+import { Store, MapPin, Bell, MessageSquare, Heart, User as UserIcon, LogOut, PlusCircle, ShieldCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Listing } from '../types'
 import { useAuth } from '../hooks/useAuth'
@@ -103,6 +103,9 @@ export default function Home() {
                 </Link>
                 <Link to="/messages" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
                   <MessageSquare className="w-4 h-4" /> Mesajlar
+                </Link>
+                <Link to="/transactions" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
+                  <ShieldCheck className="w-4 h-4" /> İşlemlerim
                 </Link>
                 <Link to="/favorites" className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 text-sm font-medium transition">
                   <Heart className="w-4 h-4" /> Favoriler
