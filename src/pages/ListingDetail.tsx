@@ -302,8 +302,17 @@ export default function ListingDetail() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <p className="text-gray-400">Yükleniyor...</p>
+    <div className="min-h-screen bg-gray-50 pt-20">
+      <div className="max-w-3xl mx-auto px-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 animate-pulse">
+          <div className="w-full h-96 bg-gray-200 rounded-xl mb-6"></div>
+          <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+          <div className="h-10 bg-gray-200 rounded w-1/3 mb-6"></div>
+          <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+        </div>
+      </div>
     </div>
   )
 
@@ -380,11 +389,13 @@ export default function ListingDetail() {
             )}
 
             {listing.is_guaranteed && !isVerified && (
-              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 shadow-sm">
-                <span className="text-emerald-600 text-xl">🛡️</span>
+              <div className="flex items-start gap-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-4 mb-6 shadow-sm">
+                <div className="bg-emerald-100 p-2 rounded-xl mt-0.5">
+                  <ShieldCheck className="text-emerald-600" size={24} />
+                </div>
                 <div>
-                  <p className="text-emerald-700 font-semibold text-sm">TurtleGüvence Seçili</p>
-                  <p className="text-emerald-600 text-xs">Satıcı bu işlemde TurtleGüvence altyapısını tercih ediyor.</p>
+                  <p className="text-emerald-800 font-bold text-sm mb-0.5">TurtleGüvence Altındadır</p>
+                  <p className="text-emerald-600 text-xs leading-relaxed">Bu ilanı satın aldığınızda paranız doğrudan satıcıya geçmez, güvenli havuz hesabımızda tutulur. Ürünü TurtleNokta esnafından teslim alıp onaylayana kadar paranız güvendedir.</p>
                 </div>
               </div>
             )}

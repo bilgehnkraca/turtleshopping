@@ -45,9 +45,15 @@ export default function Messages() {
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Mesajlar</h2>
 
         {conversations.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <p className="text-4xl mb-4">💬</p>
-            <p>Henüz mesajın yok.</p>
+          <div className="text-center py-24 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+              <span className="text-5xl opacity-80">💬</span>
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Henüz Mesajın Yok</h3>
+            <p className="text-gray-500 max-w-sm mb-8">İlgilendiğin ürünler hakkında satıcılara mesaj atarak pazarlık yapabilirsin.</p>
+            <Link to="/" className="btn-primary px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 transition-all hover:-translate-y-1">
+              İlanlara Göz At
+            </Link>
           </div>
         ) : (
           <div className="flex flex-col gap-3">

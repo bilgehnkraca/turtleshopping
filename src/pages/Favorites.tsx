@@ -63,14 +63,14 @@ export default function Favorites() {
         </div>
 
         {favorites.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
-            <p className="text-5xl mb-4">💔</p>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Henüz favori ilanınız yok</h2>
-            <p className="text-gray-500 mb-6">İlgilendiğiniz ilanları favorilere ekleyerek fiyatlarını takip edebilirsiniz.</p>
-            <Link to="/">
-                <button className="bg-emerald-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-600 transition shadow-md">
-                    İlanları Keşfet
-                </button>
+          <div className="text-center py-24 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center">
+            <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
+              <span className="text-5xl opacity-80">🤍</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Henüz Favori İlanın Yok</h2>
+            <p className="text-gray-500 max-w-sm mb-8">İlgilendiğin ilanları favorilere ekleyerek fiyat düşüşlerinden anında haberdar olabilirsin.</p>
+            <Link to="/" className="btn-primary px-8 py-3 bg-[#044c34] hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg shadow-emerald-200 transition-all hover:-translate-y-1">
+              İlanları Keşfet
             </Link>
           </div>
         ) : (
