@@ -197,7 +197,7 @@ export default function CreateListing() {
             </label>
             <input value={title} onChange={e => {
               setTitle(e.target.value);
-              if (e.target.value.trim().length >= 10) setErrors(prev => ({ ...prev, title: undefined }));
+              if (e.target.value.trim().length >= 10) setErrors(prev => ({ ...prev, title: '' }));
             }}
               placeholder="Ürününüzü kısaca tanıtın"
               className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
@@ -221,7 +221,7 @@ export default function CreateListing() {
             </label>
             <textarea value={description} onChange={e => {
               setDescription(e.target.value);
-              if (e.target.value.trim().length >= 20) setErrors(prev => ({ ...prev, description: undefined }));
+              if (e.target.value.trim().length >= 20) setErrors(prev => ({ ...prev, description: '' }));
             }}
               placeholder="Ürün hakkında detaylı bilgi verin: marka, model, kullanım süresi, kutusu var mı vs."
               rows={4}
