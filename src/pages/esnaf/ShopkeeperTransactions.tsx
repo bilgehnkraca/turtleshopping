@@ -41,11 +41,10 @@ export default function ShopkeeperTransactions() {
       return;
     }
 
-    // İlgili kodu ara (eski shop_id veya yeni seller_shop_id / buyer_shop_id)
+    // Sadece kod üzerinden işlemi bul (Shop ID ile kısıtlama, çünkü seller_shop_id henüz atanmamış olabilir)
     const { data: transactions, error } = await supabase
       .from('transactions')
-      .select('id, status, drop_off_code, pick_up_code, buyer_id')
-      .or(`shop_id.eq.${shop.id},seller_shop_id.eq.${shop.id},buyer_shop_id.eq.${shop.id}`)
+      .select('id, status, drop_off_code, pick_up_code, buyer_id, buyer_shop_id')
       .or(`drop_off_code.eq.${code},pick_up_code.eq.${code}`)
       .neq('status', 'cancelled');
 
@@ -60,8 +59,11 @@ export default function ShopkeeperTransactions() {
     // Durum analizi
     if (tx.drop_off_code === code) {
       if (tx.status === 'pending' || tx.status === 'dropped_off') {
-        // Satıcı ürünü yeni getirdi.
-        await supabase.from('transactions').update({ status: 'dropped_off_at_seller_shop' }).eq('id', tx.id);
+        // Satıcı ürünü yeni getirdi. Teslim alan bu dükkanı seller_shop_id olarak ata.
+        await supabase.from('transactions').update({ 
+          status: 'dropped_off_at_seller_shop',
+          seller_shop_id: shop.id
+        }).eq('id', tx.id);
         
         // Alıcıya Bildirim At (Cihaz Teslim Alındı)
         await supabase.from('notifications').insert({
@@ -77,6 +79,12 @@ export default function ShopkeeperTransactions() {
         setMessage({ type: 'error', text: 'Bu ürün zaten teslim alınmış ve işlemi ilerlemiş.' });
       }
     } else if (tx.pick_up_code === code) {
+      if (tx.buyer_shop_id && tx.buyer_shop_id !== shop.id) {
+        setMessage({ type: 'error', text: 'Bu ürün bu dükkana gönderilmemiş! Teslimat noktası burası değil.' });
+        setLoading(false);
+        return;
+      }
+
       if (tx.status === 'arrived_at_buyer_shop' || tx.status === 'dropped_off') {
         await supabase.from('transactions').update({ status: 'verified' }).eq('id', tx.id);
         setMessage({ type: 'success', text: '🎉 Ürün alıcıya teslim edildi! Ödeme işlemi tamamlandı.' });
