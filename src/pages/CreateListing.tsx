@@ -129,7 +129,7 @@ export default function CreateListing() {
       district,
       neighborhood,
       images: imageUrls,
-      status: 'pending',
+      status: 'active',
       is_tradeable: isTradeable,
       is_bargainable: isBargainable,
     })
@@ -158,7 +158,7 @@ export default function CreateListing() {
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">İlan Ver</h2>
-        <p className="text-gray-500 text-sm mb-6">İlanınız ekibimiz tarafından incelendikten sonra yayına girecektir.</p>
+        <p className="text-gray-500 text-sm mb-6">İlanınız oluşturulduktan hemen sonra yayına girecektir.</p>
 
         {errors.general && (
           <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{errors.general}</p>
