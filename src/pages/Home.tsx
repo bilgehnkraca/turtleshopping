@@ -74,20 +74,20 @@ export default function Home() {
             <span className="text-2xl">🐢</span>
             <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
           </Link>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 sm:gap-4 items-center overflow-x-auto no-scrollbar py-1">
             <Link to="/turtle-points" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-              <MapPin className="w-4 h-4" /> Noktalar
+              <MapPin className="w-4 h-4" /> <span className="hidden md:inline">Noktalar</span>
             </Link>
             {user ? (
               <>
                 {isPointOwner && (
                   <Link to="/point-panel" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                    <Store className="w-4 h-4" /> Nokta Paneli (Eski)
+                    <Store className="w-4 h-4" /> <span className="hidden md:inline">Nokta (Eski)</span>
                   </Link>
                 )}
                 {isShopkeeper && (
                   <Link to="/esnaf/dashboard" className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full text-sm font-bold transition">
-                    <Store className="w-4 h-4" /> B2B Esnaf Paneli
+                    <Store className="w-4 h-4" /> <span className="hidden md:inline">Esnaf Paneli</span>
                   </Link>
                 )}
                 <Link to="/notifications" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition relative">
@@ -99,19 +99,19 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                  Bildirimler
+                  <span className="hidden md:inline">Bildirimler</span>
                 </Link>
                 <Link to="/messages" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                  <MessageSquare className="w-4 h-4" /> Mesajlar
+                  <MessageSquare className="w-4 h-4" /> <span className="hidden md:inline">Mesajlar</span>
                 </Link>
                 <Link to="/transactions" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                  <ShieldCheck className="w-4 h-4" /> İşlemlerim
+                  <ShieldCheck className="w-4 h-4" /> <span className="hidden md:inline">İşlemlerim</span>
                 </Link>
                 <Link to="/favorites" className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 text-sm font-medium transition">
-                  <Heart className="w-4 h-4" /> Favoriler
+                  <Heart className="w-4 h-4" /> <span className="hidden md:inline">Favoriler</span>
                 </Link>
                 <Link to={`/profile/${user.id}`} className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                  <UserIcon className="w-4 h-4" /> Profilim
+                  <UserIcon className="w-4 h-4" /> <span className="hidden md:inline">Profilim</span>
                 </Link>
                 <Link to="/create-listing">
                   <button className="flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-600 transition shadow-sm ml-2">
