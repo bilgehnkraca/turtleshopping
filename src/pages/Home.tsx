@@ -47,6 +47,7 @@ export default function Home() {
       .from('listings')
       .select('*, profiles!listings_user_id_fkey(username, city), categories(name, icon)')
       .eq('suspended', false)
+      .eq('status', 'active')
 
     if (search) query = query.ilike('title', `%${search}%`)
     if (selectedCategory) query = query.eq('category_id', selectedCategory)
