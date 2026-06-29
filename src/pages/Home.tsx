@@ -217,18 +217,18 @@ export default function Home() {
           <div className="max-w-6xl mx-auto px-4 py-12 text-center">
             <h1 className="text-4xl font-bold mb-3">Güvenle Al, Güvenle Sat</h1>
             <p className="text-emerald-100 text-lg mb-8">Türkiye'nin en güvenilir 2. el pazarı</p>
-            <div className="max-w-2xl mx-auto flex gap-3">
+            <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-3">
               <input
                 placeholder="Ne arıyorsun?"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="flex-1 px-5 py-4 rounded-2xl text-gray-800 text-sm focus:outline-none shadow-lg"
+                className="flex-1 w-full px-5 py-4 rounded-2xl text-gray-800 text-sm focus:outline-none shadow-lg"
               />
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <select
                   value={selectedCity}
                   onChange={e => setSelectedCity(e.target.value)}
-                  className="appearance-none px-5 py-4 pr-10 rounded-2xl text-gray-700 text-sm focus:outline-none shadow-lg bg-white font-medium min-w-44 cursor-pointer">
+                  className="appearance-none w-full sm:min-w-44 px-5 py-4 pr-10 rounded-2xl text-gray-700 text-sm focus:outline-none shadow-lg bg-white font-medium cursor-pointer">
                   <option value="">📍 Tüm Şehirler</option>
                   {cities.map(c => (
                     <option key={c} value={c}>{c}</option>
