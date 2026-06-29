@@ -195,7 +195,10 @@ export default function CreateListing() {
               Başlık <span className="text-red-500">*</span>
               <span className="text-gray-400 font-normal ml-1">(min 10 karakter)</span>
             </label>
-            <input value={title} onChange={e => setTitle(e.target.value)}
+            <input value={title} onChange={e => {
+              setTitle(e.target.value);
+              if (e.target.value.trim().length >= 10) setErrors(prev => ({ ...prev, title: undefined }));
+            }}
               placeholder="Ürününüzü kısaca tanıtın"
               className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                 errors.title ? 'border-red-300' : 'border-gray-200'
@@ -216,7 +219,10 @@ export default function CreateListing() {
               Açıklama <span className="text-red-500">*</span>
               <span className="text-gray-400 font-normal ml-1">(min 20 karakter)</span>
             </label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)}
+            <textarea value={description} onChange={e => {
+              setDescription(e.target.value);
+              if (e.target.value.trim().length >= 20) setErrors(prev => ({ ...prev, description: undefined }));
+            }}
               placeholder="Ürün hakkında detaylı bilgi verin: marka, model, kullanım süresi, kutusu var mı vs."
               rows={4}
               className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none ${
