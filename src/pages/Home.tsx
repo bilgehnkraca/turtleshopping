@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Store, MapPin, Bell, MessageSquare, Heart, User as UserIcon, LogOut, PlusCircle, ShieldCheck } from 'lucide-react'
+import { Store, MapPin, Bell, MessageSquare, Heart, User as UserIcon, LogOut, PlusCircle, ShieldCheck, Menu, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Listing } from '../types'
 import { useAuth } from '../hooks/useAuth'
@@ -19,6 +19,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest')
   const [categories, setCategories] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     fetchListings()
@@ -74,20 +75,21 @@ export default function Home() {
             <span className="text-2xl">🐢</span>
             <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
           </Link>
-          <div className="flex gap-3 sm:gap-4 items-center overflow-x-auto no-scrollbar py-1">
+          {/* Desktop Nav */}
+          <div className="hidden md:flex gap-4 items-center">
             <Link to="/turtle-points" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-              <MapPin className="w-4 h-4" /> <span className="hidden md:inline">Noktalar</span>
+              <MapPin className="w-4 h-4" /> Noktalar
             </Link>
             {user ? (
               <>
                 {isPointOwner && (
                   <Link to="/point-panel" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                    <Store className="w-4 h-4" /> <span className="hidden md:inline">Nokta (Eski)</span>
+                    <Store className="w-4 h-4" /> Nokta (Eski)
                   </Link>
                 )}
                 {isShopkeeper && (
                   <Link to="/esnaf/dashboard" className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full text-sm font-bold transition">
-                    <Store className="w-4 h-4" /> <span className="hidden md:inline">Esnaf Paneli</span>
+                    <Store className="w-4 h-4" /> Esnaf Paneli
                   </Link>
                 )}
                 <Link to="/notifications" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition relative">
@@ -99,19 +101,19 @@ export default function Home() {
                       </span>
                     )}
                   </div>
-                  <span className="hidden md:inline">Bildirimler</span>
+                  Bildirimler
                 </Link>
                 <Link to="/messages" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                  <MessageSquare className="w-4 h-4" /> <span className="hidden md:inline">Mesajlar</span>
+                  <MessageSquare className="w-4 h-4" /> Mesajlar
                 </Link>
                 <Link to="/transactions" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                  <ShieldCheck className="w-4 h-4" /> <span className="hidden md:inline">İşlemlerim</span>
+                  <ShieldCheck className="w-4 h-4" /> İşlemlerim
                 </Link>
                 <Link to="/favorites" className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 text-sm font-medium transition">
-                  <Heart className="w-4 h-4" /> <span className="hidden md:inline">Favoriler</span>
+                  <Heart className="w-4 h-4" /> Favoriler
                 </Link>
                 <Link to={`/profile/${user.id}`} className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                  <UserIcon className="w-4 h-4" /> <span className="hidden md:inline">Profilim</span>
+                  <UserIcon className="w-4 h-4" /> Profilim
                 </Link>
                 <Link to="/create-listing">
                   <button className="flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-600 transition shadow-sm ml-2">
@@ -135,7 +137,78 @@ export default function Home() {
               </>
             )}
           </div>
+
+          {/* Mobile Nav Button */}
+          <div className="md:hidden flex items-center">
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-gray-600">
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Nav Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white">
+            <div className="flex flex-col p-4 gap-4">
+              <Link to="/turtle-points" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
+                <MapPin className="w-5 h-5" /> Noktalar
+              </Link>
+              {user ? (
+                <>
+                  {isPointOwner && (
+                    <Link to="/point-panel" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
+                      <Store className="w-5 h-5" /> Nokta (Eski)
+                    </Link>
+                  )}
+                  {isShopkeeper && (
+                    <Link to="/esnaf/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 p-2 rounded-lg">
+                      <Store className="w-5 h-5" /> Esnaf Paneli
+                    </Link>
+                  )}
+                  <Link to="/notifications" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium relative">
+                    <Bell className="w-5 h-5" /> Bildirimler
+                    {unreadCount > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-full ml-1">
+                        {unreadCount} yeni
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/messages" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
+                    <MessageSquare className="w-5 h-5" /> Mesajlar
+                  </Link>
+                  <Link to="/transactions" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
+                    <ShieldCheck className="w-5 h-5" /> İşlemlerim
+                  </Link>
+                  <Link to="/favorites" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
+                    <Heart className="w-5 h-5" /> Favoriler
+                  </Link>
+                  <Link to={`/profile/${user.id}`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
+                    <UserIcon className="w-5 h-5" /> Profilim
+                  </Link>
+                  <Link to="/create-listing" onClick={() => setIsMenuOpen(false)}>
+                    <button className="w-full flex justify-center items-center gap-2 bg-emerald-500 text-white px-4 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition shadow-sm mt-2">
+                      <PlusCircle className="w-5 h-5" /> İlan Ver
+                    </button>
+                  </Link>
+                  <button onClick={() => { signOut(); setIsMenuOpen(false); }} className="flex items-center gap-2 text-red-500 font-medium mt-2">
+                    <LogOut className="w-5 h-5" /> Çıkış
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setIsMenuOpen(false)} className="w-full text-center py-2 text-gray-600 font-medium">
+                    Giriş Yap
+                  </Link>
+                  <Link to="/register" onClick={() => setIsMenuOpen(false)}>
+                    <button className="w-full bg-emerald-500 text-white px-4 py-3 rounded-xl font-semibold">
+                      Kayıt Ol
+                    </button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero */}
