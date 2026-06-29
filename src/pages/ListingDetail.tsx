@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Listing } from '../types'
 import { ShieldCheck, X } from 'lucide-react'
@@ -22,7 +22,9 @@ const reportReasons: Record<string, string> = {
 export default function ListingDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [listing, setListing] = useState<Listing | null>(null)
+  const [acceptedOfferPrice, setAcceptedOfferPrice] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
   const [isFavorited, setIsFavorited] = useState(false)
@@ -97,7 +99,19 @@ export default function ListingDetail() {
   }
 
   useEffect(() => {
+    async function fetchOffer() {
+      const offerId = searchParams.get('offer_id')
+      if (offerId) {
+        const { data } = await supabase.from('offers').select('amount, status').eq('id', offerId).single()
+        if (data && data.status === 'accepted') {
+          setAcceptedOfferPrice(data.amount)
+        }
+      }
+    }
+
     fetchListing()
+    fetchOffer()
+    
     supabase.auth.getUser().then(({ data }) => {
       const userId = data.user?.id || null
       setCurrentUser(userId)
@@ -105,7 +119,7 @@ export default function ListingDetail() {
     })
     supabase.from('turtle_points').select('*').eq('is_active', true).then(({ data }) => setTurtlePoints(data || []))
     supabase.from('shop_locations').select('*').eq('is_active', true).then(({ data }) => setShops(data || []))
-  }, [id])
+  }, [id, searchParams])
 
   async function toggleFavorite() {
     if (!currentUser) { navigate('/login'); return }
@@ -235,7 +249,22 @@ export default function ListingDetail() {
 
     setBuyLoading(true)
     try {
-      const commission = listing.price * 0.05 // %5 Komisyon simülasyonu
+      let finalPrice = listing.price
+      const offerId = searchParams.get('offer_id')
+      
+      if (offerId) {
+        const { data: offerData } = await supabase
+          .from('offers')
+          .select('amount, status')
+          .eq('id', offerId)
+          .single()
+          
+        if (offerData && offerData.status === 'accepted') {
+          finalPrice = offerData.amount
+        }
+      }
+
+      const commission = finalPrice * 0.05 // %5 Komisyon simülasyonu
       const dropOffCode = Math.random().toString(36).substring(2, 8).toUpperCase()
       const pickUpCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
@@ -244,7 +273,7 @@ export default function ListingDetail() {
         buyer_id: currentUser,
         seller_id: listing.user_id,
         buyer_shop_id: selectedShop,
-        price: listing.price,
+        price: finalPrice,
         commission: commission,
         status: 'pending',
         drop_off_code: dropOffCode,
@@ -490,35 +519,33 @@ export default function ListingDetail() {
 
             {!isOwner && (
               <>
-                <button onClick={() => {
-                  if (!currentUser) { navigate('/login'); return }
-                  setShowBuyModal(true)
-                }}
-                  className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 mb-3">
-                  <ShieldCheck size={20} />
-                  TurtleGüvence ile Satın Al
-                </button>
-
-                <div className="flex gap-2 mb-3">
-                  <button onClick={() => {
-                    if (!currentUser) { navigate('/login'); return }
-                    setShowOfferModal(true)
-                  }}
-                    className="flex-1 bg-white border-2 border-emerald-500 text-emerald-600 py-3 rounded-xl font-bold hover:bg-emerald-50 transition text-sm">
-                    💰 Teklif Ver
-                  </button>
-                  
-                  <button onClick={handleContact}
-                    className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition text-sm">
-                    💬 Mesaj At
-                  </button>
-                </div>
+                {listing.status === 'active' && (
+                  <>
+                    <button onClick={() => setShowBuyModal(true)}
+                      className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
+                      {acceptedOfferPrice ? `İndirimli Al: ${acceptedOfferPrice.toLocaleString('tr-TR')} ₺` : 'Satın Al'}
+                    </button>
+                    <div className="grid grid-cols-2 gap-3 mt-3">             
+                      <button onClick={() => {
+                        if (!currentUser) { navigate('/login'); return }
+                        setShowOfferModal(true)
+                      }}
+                        className="flex-1 bg-white border-2 border-emerald-500 text-emerald-600 py-3 rounded-xl font-bold hover:bg-emerald-50 transition text-sm">
+                        💰 Teklif Ver
+                      </button>
+                      <button onClick={handleContact}
+                        className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition text-sm">
+                        💬 Mesaj At
+                      </button>
+                    </div>
+                  </>
+                )}
                 
                 <button onClick={() => {
                   if (!currentUser) { navigate('/login'); return }
                   setShowReportModal(true)
                 }}
-                  className="w-full bg-red-50 text-red-500 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition">
+                  className="w-full mt-3 bg-red-50 text-red-500 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition">
                   🚨 İlanı Şikayet Et
                 </button>
               </>
@@ -661,15 +688,15 @@ export default function ListingDetail() {
             <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-4">
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-600">Ürün Bedeli:</span>
-                <span className="font-semibold">{listing?.price.toLocaleString('tr-TR')} ₺</span>
+                <span className="font-semibold">{(acceptedOfferPrice || listing?.price || 0).toLocaleString('tr-TR')} ₺</span>
               </div>
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-600">Hizmet Bedeli (%5):</span>
-                <span className="font-semibold">{(listing ? listing.price * 0.05 : 0).toLocaleString('tr-TR')} ₺</span>
+                <span className="font-semibold">{((acceptedOfferPrice || listing?.price || 0) * 0.05).toLocaleString('tr-TR')} ₺</span>
               </div>
               <div className="flex justify-between text-base border-t border-emerald-200 mt-2 pt-2">
                 <span className="font-bold text-gray-800">Toplam:</span>
-                <span className="font-bold text-emerald-600">{(listing ? listing.price * 1.05 : 0).toLocaleString('tr-TR')} ₺</span>
+                <span className="font-bold text-emerald-600">{((acceptedOfferPrice || listing?.price || 0) * 1.05).toLocaleString('tr-TR')} ₺</span>
               </div>
             </div>
 
