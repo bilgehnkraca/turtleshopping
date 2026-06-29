@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { Navbar } from '../components/Navbar';
 import { ShieldCheck, Package, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 
 export default function MyTransactions() {
@@ -102,8 +103,9 @@ export default function MyTransactions() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-20">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <Navbar />
+      <div className="max-w-5xl mx-auto px-4 py-8">
         
         <div className="flex items-center gap-4 mb-8">
           <ShieldCheck className="text-emerald-600" size={40} />
