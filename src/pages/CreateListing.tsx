@@ -106,7 +106,11 @@ export default function CreateListing() {
   }
 
   async function handleSubmit() {
-    if (!validate()) return
+    if (!validate()) {
+      alert("Lütfen formdaki kırmızı ile işaretlenmiş hataları düzeltin.")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -130,8 +134,14 @@ export default function CreateListing() {
       is_bargainable: isBargainable,
     })
 
-    if (error) setErrors({ general: error.message })
-    else navigate('/listing-submitted')
+    if (error) {
+      console.error("Listing insert error:", error)
+      setErrors({ general: error.message })
+      alert("Hata: " + error.message)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      navigate('/listing-submitted')
+    }
     setLoading(false)
   }
 
