@@ -72,7 +72,8 @@ export default function MyTransactions() {
       setActiveTx(null);
       fetchTransactions();
     } else {
-      alert('İşlem sırasında bir hata oluştu.');
+      console.error(error);
+      alert('İşlem sırasında bir hata oluştu: ' + error.message);
     }
   };
 
@@ -87,7 +88,8 @@ export default function MyTransactions() {
       setActiveTx(null);
       fetchTransactions();
     } else {
-      alert('İptal sırasında bir hata oluştu.');
+      console.error(error);
+      alert('İptal sırasında bir hata oluştu: ' + error.message);
     }
   };
 
