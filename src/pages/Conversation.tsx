@@ -48,7 +48,7 @@ export default function Conversation() {
   async function fetchConversation() {
     const { data } = await supabase
       .from('conversations')
-      .select('*, listings(title, price)')
+      .select('*, listings(title, price), buyer:profiles!conversations_buyer_id_fkey(id, username, full_name), seller:profiles!conversations_seller_id_fkey(id, username, full_name)')
       .eq('id', id)
       .single()
     setConversation(data)
@@ -78,11 +78,18 @@ export default function Conversation() {
       {/* Header */}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/" className="text-emerald-600 text-sm hover:underline">← Ana Sayfa</Link>
-          {conversation?.listings && (
-            <div className="flex-1">
-              <p className="font-bold text-gray-800 text-sm truncate">{conversation.listings.title}</p>
-              <p className="text-xs text-emerald-600 font-bold">{conversation.listings.price?.toLocaleString('tr-TR')} ₺</p>
+          <Link to="/messages" className="text-emerald-600 text-sm hover:underline">← Geri</Link>
+          {conversation && (
+            <div className="flex-1 flex justify-between items-center">
+              <div>
+                <p className="font-bold text-gray-800 text-sm truncate">{conversation.listings?.title}</p>
+                <p className="text-xs text-emerald-600 font-bold">{conversation.listings?.price?.toLocaleString('tr-TR')} ₺</p>
+              </div>
+              <Link to={`/profile/${conversation.buyer_id === currentUser ? conversation.seller?.id : conversation.buyer?.id}`} className="text-sm font-medium text-blue-600 hover:underline">
+                {conversation.buyer_id === currentUser 
+                  ? (conversation.seller?.full_name || conversation.seller?.username) 
+                  : (conversation.buyer?.full_name || conversation.buyer?.username)}
+              </Link>
             </div>
           )}
         </div>

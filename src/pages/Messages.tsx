@@ -11,11 +11,22 @@ export default function Messages() {
   async function fetchConversations(userId: string) {
     const { data } = await supabase
       .from('conversations')
-      .select('*, listings(title, price, images), buyer:profiles!conversations_buyer_id_fkey(username, full_name), seller:profiles!conversations_seller_id_fkey(username, full_name)')
+      .select('*, listings(title, price, images), buyer:profiles!conversations_buyer_id_fkey(id, username, full_name), seller:profiles!conversations_seller_id_fkey(id, username, full_name)')
       .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
       .order('created_at', { ascending: false })
     setConversations(data || [])
     setLoading(false)
+  }
+
+  async function handleDelete(e: any, convId: string) {
+    e.preventDefault()
+    if (!confirm('Bu konuşmayı silmek istediğinize emin misiniz?')) return
+    const { error } = await supabase.from('conversations').delete().eq('id', convId)
+    if (error) {
+      alert('Silinemedi: ' + error.message)
+    } else {
+      setConversations(prev => prev.filter(c => c.id !== convId))
+    }
   }
 
   useEffect(() => {
@@ -63,7 +74,7 @@ export default function Messages() {
               const listing = conv.listings
 
               return (
-                <Link to={`/conversation/${conv.id}`} key={conv.id}>
+                <Link to={`/conversation/${conv.id}`} key={conv.id} className="block group">
                   <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition">
                     {listing?.images?.[0] ? (
                       <img src={listing.images[0]} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
@@ -73,11 +84,24 @@ export default function Messages() {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-800 text-sm truncate">{listing?.title}</p>
                       <p className="text-blue-600 text-sm font-bold">{listing?.price?.toLocaleString('tr-TR')} ₺</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {otherUser?.full_name || otherUser?.username}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Link 
+                          to={`/profile/${otherUser?.id}`} 
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs font-bold text-gray-600 hover:text-blue-600 hover:underline bg-gray-100 px-2 py-1 rounded-md transition"
+                        >
+                          👤 {otherUser?.full_name || otherUser?.username || 'Kullanıcı'}
+                        </Link>
+                      </div>
                     </div>
-                    <span className="text-gray-300 text-lg">→</span>
+                    <button 
+                      onClick={(e) => handleDelete(e, conv.id)}
+                      className="text-gray-300 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition"
+                      title="Sil"
+                    >
+                      🗑️
+                    </button>
+                    <span className="text-gray-300 text-lg group-hover:text-blue-500 transition">→</span>
                   </div>
                 </Link>
               )
