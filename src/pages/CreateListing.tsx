@@ -39,7 +39,7 @@ export default function CreateListing() {
     setNeighborhood('')
     if (city) {
       const cityData = locationDB.find((c: any) => c.name === city)
-      setDistricts(cityData ? cityData.districts : [])
+      setDistricts(cityData ? cityData.towns : [])
     } else {
       setDistricts([])
     }
@@ -48,9 +48,14 @@ export default function CreateListing() {
   // District changed
   useEffect(() => {
     setNeighborhood('')
-    if (district) {
-      const distData = districts.find((d: any) => d.name === district)
-      setNeighborhoods(distData ? distData.neighborhoods : [])
+    if (district && districts && districts.length > 0) {
+      const townData = districts.find((d: any) => d.name === district)
+      if (townData && townData.districts) {
+        const allQuarters = townData.districts.flatMap((d: any) => d.quarters || [])
+        setNeighborhoods(allQuarters)
+      } else {
+        setNeighborhoods([])
+      }
     } else {
       setNeighborhoods([])
     }
