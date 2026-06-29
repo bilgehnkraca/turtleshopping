@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Navbar } from '../components/Navbar'
 import { supabase } from '../lib/supabase'
 
 const ADMIN_EMAIL = 'bilgekral04@gmail.com'
@@ -141,15 +142,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🐢</span>
-            <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
-          </Link>
-          <span className="text-sm text-gray-500 font-medium">⚙️ Admin Paneli</span>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">

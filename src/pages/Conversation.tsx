@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { Navbar } from '../components/Navbar'
 
 export default function Conversation() {
   const { id } = useParams()
@@ -115,6 +116,7 @@ export default function Conversation() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Navbar />
       {/* Header */}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { Navbar } from '../components/Navbar'
 
 export default function TurtlePoints() {
   const [points, setPoints] = useState<any[]>([])
@@ -29,15 +29,7 @@ export default function TurtlePoints() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🐢</span>
-            <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
-          </Link>
-          <Link to="/" className="text-emerald-600 text-sm hover:underline">← Ana Sayfa</Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Başlık */}

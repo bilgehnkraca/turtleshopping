@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { Navbar } from '../components/Navbar'
 import type { Category } from '../types'
 import locationsData from '../data/locations.json'
 
@@ -147,14 +148,7 @@ export default function CreateListing() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🐢</span>
-            <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
-          </Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">İlan Ver</h2>

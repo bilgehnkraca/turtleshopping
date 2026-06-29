@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { Navbar } from '../components/Navbar'
 
 export default function PointPanel() {
   const navigate = useNavigate()
@@ -108,6 +109,7 @@ export default function PointPanel() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Navbar />
       {/* PoS Header */}
       <nav className="bg-gray-900 text-white shadow-md">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">

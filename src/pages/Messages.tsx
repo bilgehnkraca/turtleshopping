@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { Navbar } from '../components/Navbar'
 
 export default function Messages() {
   const navigate = useNavigate()
@@ -45,12 +46,7 @@ export default function Messages() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-  <Link to="/" className="text-2xl font-bold text-blue-600">🐢 TurtleShopping</Link>
-  <Link to="/" className="text-blue-600 text-sm hover:underline">← Ana Sayfa</Link>
-</div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Mesajlar</h2>

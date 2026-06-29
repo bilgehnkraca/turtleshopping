@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Listing } from '../types'
 import { ShieldCheck, X } from 'lucide-react'
+import { Navbar } from '../components/Navbar'
 
 const conditionLabels: Record<string, string> = {
   new: 'Sıfır',
@@ -361,15 +362,7 @@ export default function ListingDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🐢</span>
-            <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
-          </Link>
-          <Link to="/" className="text-emerald-600 text-sm hover:underline">← Ana Sayfa</Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

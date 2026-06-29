@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Category } from '../types'
 import locationsData from '../data/locations.json'
+import { Navbar } from '../components/Navbar'
 
 const locationDB = locationsData as any[]
 
@@ -122,15 +123,7 @@ export default function EditListing() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl">🐢</span>
-            <span className="text-xl font-bold text-gray-800">TurtleShopping</span>
-          </Link>
-          <Link to={`/listing/${id}`} className="text-emerald-600 text-sm hover:underline">← İlana Dön</Link>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">İlanı Düzenle</h2>
