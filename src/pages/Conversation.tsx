@@ -126,7 +126,12 @@ export default function Conversation() {
   }
 
   async function handleCounterOffer() {
-    if (!counterAmount || !offer) return
+    if (!counterAmount || !offer || !conversation?.listings?.price) return
+    
+    const minAmount = conversation.listings.price * 0.9;
+    if (Number(counterAmount) < minAmount) {
+      return alert(`Teklifiniz ilan fiyatının %10'undan daha düşük olamaz. Minimum teklif: ${minAmount.toLocaleString('tr-TR')} ₺`);
+    }
     
     // Onceki teklifi rejected yapalim (veya pending kalabilir, ama rejected daha temiz)
     await supabase.from('offers').update({ status: 'rejected' }).eq('id', offer.id)

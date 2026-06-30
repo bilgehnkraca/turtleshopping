@@ -192,6 +192,11 @@ export default function ListingDetail() {
     if (!offerAmount || isNaN(Number(offerAmount))) return alert('Geçerli bir tutar girin.')
     if (!listing) return
 
+    const minAmount = listing.price * 0.9;
+    if (Number(offerAmount) < minAmount) {
+      return alert(`Teklifiniz ilan fiyatının %10'undan daha düşük olamaz. Minimum teklif: ${minAmount.toLocaleString('tr-TR')} ₺`);
+    }
+
     setOfferLoading(true)
     try {
       // 1. Teklifi kaydet
