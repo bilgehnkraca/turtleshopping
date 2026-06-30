@@ -14,8 +14,10 @@ export default function ShopkeeperTransactions() {
   
   // Rapor Form State
   const [cosmeticScore, setCosmeticScore] = useState(10);
-  const [functionalStatus, setFunctionalStatus] = useState(true);
-  const [notWorkingParts, setNotWorkingParts] = useState('');
+  const [screenCondition, setScreenCondition] = useState('Kusursuz');
+  const [batteryHealth, setBatteryHealth] = useState('100');
+  const [biometricsStatus, setBiometricsStatus] = useState('Çalışıyor');
+  const [cameraCondition, setCameraCondition] = useState('Temiz');
   const [technicianNotes, setTechnicianNotes] = useState('');
 
   async function handleVerifyCode(e: React.FormEvent) {
@@ -104,15 +106,26 @@ export default function ShopkeeperTransactions() {
 
     const { data: shop } = await supabase.from('shop_locations').select('id, shop_name').eq('profile_id', user?.id).single();
 
+    const formattedNotes = `
+📱 **Ekspertiz Detayları**
+- Ekran Durumu: ${screenCondition}
+- Batarya Sağlığı: %${batteryHealth}
+- FaceID/TouchID: ${biometricsStatus}
+- Kamera Lensi: ${cameraCondition}
+
+📝 **Teknisyenin Ek Notları**
+${technicianNotes || 'Ek not bulunmuyor.'}
+    `.trim();
+
     // Raporu kaydet
     const { error } = await supabase.from('device_reports').insert({
       transaction_id: activeTransaction.id,
       shop_id: shop?.id,
       technician_id: user?.id,
       cosmetic_score: cosmeticScore,
-      functional_status: functionalStatus,
-      not_working_parts: functionalStatus ? null : notWorkingParts,
-      technician_notes: technicianNotes
+      functional_status: biometricsStatus === 'Çalışıyor',
+      not_working_parts: biometricsStatus === 'Çalışmıyor' ? 'FaceID/TouchID arızalı' : null,
+      technician_notes: formattedNotes
     });
 
     if (error) {
@@ -134,8 +147,10 @@ export default function ShopkeeperTransactions() {
       setMessage({ type: 'success', text: '📄 Ekspertiz raporu alıcıya iletildi. Alıcı onayladığında kargo süreci başlayacak.' });
       // Formu temizle
       setCosmeticScore(10);
-      setFunctionalStatus(true);
-      setNotWorkingParts('');
+      setScreenCondition('Kusursuz');
+      setBatteryHealth('100');
+      setBiometricsStatus('Çalışıyor');
+      setCameraCondition('Temiz');
       setTechnicianNotes('');
     }
     setLoading(false);
@@ -213,23 +228,46 @@ export default function ShopkeeperTransactions() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Donanım Testi: Cihaz Çalışıyor mu?</label>
-                <div className="flex gap-4">
-                  <button type="button" onClick={() => setFunctionalStatus(true)} className={`flex-1 py-3 rounded-xl border-2 font-bold transition ${functionalStatus ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>Evet, Sorunsuz</button>
-                  <button type="button" onClick={() => setFunctionalStatus(false)} className={`flex-1 py-3 rounded-xl border-2 font-bold transition ${!functionalStatus ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>Hayır, Sorunlu</button>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Ekran Durumu</label>
+                <select value={screenCondition} onChange={e => setScreenCondition(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-gray-700">
+                  <option value="Kusursuz">Kusursuz</option>
+                  <option value="Kılcal Çizik">Kılcal Çizik</option>
+                  <option value="Derin Çizik">Derin Çizik</option>
+                  <option value="Kırık/Çatlak">Kırık/Çatlak</option>
+                </select>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Batarya Sağlığı (%)</label>
+                  <input type="number" min="0" max="100" value={batteryHealth} onChange={e => setBatteryHealth(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-gray-700" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">FaceID / TouchID</label>
+                  <select value={biometricsStatus} onChange={e => setBiometricsStatus(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-gray-700">
+                    <option value="Çalışıyor">Çalışıyor</option>
+                    <option value="Çalışmıyor">Çalışmıyor</option>
+                  </select>
                 </div>
               </div>
 
-              {!functionalStatus && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Çalışmayan Aksamlar</label>
-                  <input type="text" value={notWorkingParts} onChange={e => setNotWorkingParts(e.target.value)} placeholder="Örn: Wi-Fi bozuk, ekran dokunmatiği sorunlu" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 outline-none" required={!functionalStatus} />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Kamera Lensi</label>
+                <select value={cameraCondition} onChange={e => setCameraCondition(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-gray-700">
+                  <option value="Temiz">Temiz</option>
+                  <option value="Tozlu">Tozlu</option>
+                  <option value="Hasarlı/Çatlak">Hasarlı/Çatlak</option>
+                </select>
+              </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Teknisyen Notu (Alıcı Görecek)</label>
-                <textarea rows={4} value={technicianNotes} onChange={e => setTechnicianNotes(e.target.value)} placeholder="Cihaz hakkında alıcının bilmesi gereken detaylar..." className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none resize-none" required></textarea>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Ekstra Teknisyen Notu (Opsiyonel)</label>
+                <textarea rows={3} value={technicianNotes} onChange={e => setTechnicianNotes(e.target.value)} placeholder="Alıcının bilmesi gereken diğer detaylar..." className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-emerald-500 outline-none resize-none font-medium text-gray-700"></textarea>
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center justify-between mb-2">
+                 <p className="text-emerald-800 text-sm font-medium">Bu raporu onayladığınızda kazancınız (Tahmini):</p>
+                 <span className="text-emerald-700 font-bold">250 ₺</span>
               </div>
 
               <div className="pt-4 flex gap-4">

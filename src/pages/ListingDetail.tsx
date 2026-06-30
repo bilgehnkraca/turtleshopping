@@ -492,23 +492,36 @@ export default function ListingDetail() {
               <>
                 {listing.status === 'active' && (
                   <>
-                    <button onClick={() => setShowBuyModal(true)}
-                      className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
-                      {acceptedOfferPrice ? `İndirimli Al: ${acceptedOfferPrice.toLocaleString('tr-TR')} ₺` : 'Satın Al'}
-                    </button>
-                    <div className="grid grid-cols-2 gap-3 mt-3">             
-                      <button onClick={() => {
-                        if (!currentUser) { navigate('/login'); return }
-                        setShowOfferModal(true)
-                      }}
-                        className="flex-1 bg-white border-2 border-emerald-500 text-emerald-600 py-3 rounded-xl font-bold hover:bg-emerald-50 transition text-sm">
-                        💰 Teklif Ver
-                      </button>
-                      <button onClick={handleContact}
-                        className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition text-sm">
-                        💬 Mesaj At
-                      </button>
-                    </div>
+                    {(listing.categories?.slug === 'telefon' || listing.categories?.slug === 'tablet') ? (
+                      <>
+                        <button onClick={() => setShowBuyModal(true)}
+                          className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
+                          {acceptedOfferPrice ? `İndirimli Al: ${acceptedOfferPrice.toLocaleString('tr-TR')} ₺` : 'Satın Al'}
+                        </button>
+                        <div className="grid grid-cols-2 gap-3 mt-3">             
+                          <button onClick={() => {
+                            if (!currentUser) { navigate('/login'); return }
+                            setShowOfferModal(true)
+                          }}
+                            className="flex-1 bg-white border-2 border-emerald-500 text-emerald-600 py-3 rounded-xl font-bold hover:bg-emerald-50 transition text-sm">
+                            💰 Teklif Ver
+                          </button>
+                          <button onClick={handleContact}
+                            className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition text-sm">
+                            💬 Mesaj At
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-center">
+                        <p className="text-gray-800 font-bold mb-1">🐢 TurtleGüvence Çok Yakında!</p>
+                        <p className="text-gray-500 text-xs mb-3">Şu an için ekspertiz ve havuz ödeme hizmetimiz sadece <b>Telefon</b> ve <b>Tablet</b> kategorilerinde aktiftir.</p>
+                        <button onClick={handleContact}
+                            className="w-full bg-emerald-50 text-emerald-700 py-3 rounded-xl font-bold hover:bg-emerald-100 transition border border-emerald-200 text-sm">
+                            💬 Satıcıya Mesaj At
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
                 

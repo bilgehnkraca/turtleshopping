@@ -100,6 +100,7 @@ export interface Offer {
   listing_id: string
   buyer_id: string
   seller_id: string
+  sender_id: string
   amount: number
   status: 'pending' | 'accepted' | 'rejected' | 'withdrawn'
   created_at: string

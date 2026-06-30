@@ -11,6 +11,8 @@ export default function Conversation() {
   const [currentUser, setCurrentUser] = useState<string | null>(null)
   const [conversation, setConversation] = useState<any>(null)
   const [offer, setOffer] = useState<any>(null)
+  const [showCounterModal, setShowCounterModal] = useState(false)
+  const [counterAmount, setCounterAmount] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const quickReplies = [
@@ -87,7 +89,16 @@ export default function Conversation() {
       .select('*')
       .eq('conversation_id', id)
       .order('created_at', { ascending: true })
+    
     setMessages(data || [])
+
+    // Gelen mesajlari okundu isaretle
+    if (data && currentUser) {
+      const unreadIds = data.filter(m => m.sender_id !== currentUser && !m.is_read).map(m => m.id)
+      if (unreadIds.length > 0) {
+        await supabase.from('messages').update({ is_read: true }).in('id', unreadIds)
+      }
+    }
   }
 
   async function sendMessage(text: string = newMessage) {
@@ -103,14 +114,36 @@ export default function Conversation() {
   async function handleAcceptOffer() {
     if (!offer) return
     await supabase.from('offers').update({ status: 'accepted' }).eq('id', offer.id)
-    await sendMessage(`🎁 SİSTEM: Satıcı ${offer.amount.toLocaleString('tr-TR')} ₺ teklifinizi kabul etti!`)
+    await sendMessage(`🎁 SİSTEM: Karşı taraf ${offer.amount.toLocaleString('tr-TR')} ₺ teklifi kabul etti!`)
     fetchOffer(conversation.listing_id, conversation.buyer_id)
   }
 
   async function handleRejectOffer() {
     if (!offer) return
     await supabase.from('offers').update({ status: 'rejected' }).eq('id', offer.id)
-    await sendMessage(`🎁 SİSTEM: Satıcı ${offer.amount.toLocaleString('tr-TR')} ₺ teklifinizi reddetti.`)
+    await sendMessage(`🎁 SİSTEM: Karşı taraf ${offer.amount.toLocaleString('tr-TR')} ₺ teklifi reddetti.`)
+    fetchOffer(conversation.listing_id, conversation.buyer_id)
+  }
+
+  async function handleCounterOffer() {
+    if (!counterAmount || !offer) return
+    
+    // Onceki teklifi rejected yapalim (veya pending kalabilir, ama rejected daha temiz)
+    await supabase.from('offers').update({ status: 'rejected' }).eq('id', offer.id)
+    
+    // Yeni teklifi olustur
+    await supabase.from('offers').insert({
+      listing_id: conversation.listing_id,
+      buyer_id: conversation.buyer_id,
+      seller_id: conversation.seller_id,
+      sender_id: currentUser,
+      amount: parseInt(counterAmount),
+      status: 'pending'
+    })
+
+    await sendMessage(`🎁 SİSTEM: Karşı taraf yeni bir teklif sundu: ${parseInt(counterAmount).toLocaleString('tr-TR')} ₺`)
+    setShowCounterModal(false)
+    setCounterAmount('')
     fetchOffer(conversation.listing_id, conversation.buyer_id)
   }
 
@@ -145,17 +178,32 @@ export default function Conversation() {
             <div>
               <p className="text-blue-800 font-bold text-sm">Aktif Teklif: {offer.amount.toLocaleString('tr-TR')} ₺</p>
               <p className="text-blue-700 text-xs mt-1">
-                {currentUser === conversation?.seller_id 
-                  ? 'Alıcı bu fiyatı teklif etti. Kabul ederseniz işlem bu fiyattan başlayacak.' 
-                  : 'Teklifiniz satıcının onayını bekliyor.'}
+                {currentUser !== offer.sender_id 
+                  ? 'Karşı taraf bu fiyatı teklif etti. Kabul ederseniz işlem bu fiyattan başlayacak.' 
+                  : 'Teklifiniz karşı tarafın onayını bekliyor.'}
               </p>
             </div>
-            {currentUser === conversation?.seller_id && (
+            {currentUser !== offer.sender_id && (
               <div className="flex gap-2 w-full sm:w-auto">
                 <button onClick={handleAcceptOffer} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition">Kabul Et</button>
+                <button onClick={() => setShowCounterModal(true)} className="flex-1 sm:flex-none bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 px-4 py-2 rounded-xl text-sm font-bold transition">Karşı Teklif</button>
                 <button onClick={handleRejectOffer} className="flex-1 sm:flex-none bg-white text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2 rounded-xl text-sm font-bold transition">Reddet</button>
               </div>
             )}
+          </div>
+        )}
+
+        {showCounterModal && (
+          <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-4 shadow-sm flex items-center gap-3">
+             <input 
+               type="number"
+               placeholder="Yeni Teklifiniz (₺)"
+               value={counterAmount}
+               onChange={e => setCounterAmount(e.target.value)}
+               className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold"
+             />
+             <button onClick={handleCounterOffer} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-blue-700">Gönder</button>
+             <button onClick={() => setShowCounterModal(false)} className="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-200">İptal</button>
           </div>
         )}
 
@@ -186,12 +234,18 @@ export default function Conversation() {
 
         {messages.map(msg => (
           <div key={msg.id} className={`flex mb-3 ${msg.sender_id === currentUser ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-xs px-4 py-2.5 text-sm ${
+            <div className={`max-w-xs px-4 py-2.5 text-sm flex flex-col ${
               msg.sender_id === currentUser
                 ? 'bg-emerald-600 text-white rounded-2xl rounded-br-sm shadow-sm'
                 : 'bg-white text-gray-800 border border-gray-100 shadow-sm rounded-2xl rounded-bl-sm'
             }`}>
-              {msg.content}
+              <span className="leading-relaxed">{msg.content}</span>
+              <div className="text-[10px] opacity-70 text-right mt-1 flex justify-end items-center gap-1">
+                <span>{new Date(msg.created_at).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}</span>
+                {msg.sender_id === currentUser && (
+                  <span className={msg.is_read ? 'text-blue-300 font-bold' : ''}>{msg.is_read ? '✓✓' : '✓'}</span>
+                )}
+              </div>
             </div>
           </div>
         ))}
