@@ -11,6 +11,7 @@ export interface Profile {
   review_count: number
   created_at: string
   role?: string
+  iban?: string
 }
 
 export interface Category {

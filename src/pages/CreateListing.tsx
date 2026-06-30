@@ -11,6 +11,7 @@ export default function CreateListing() {
   const navigate = useNavigate()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(false)
+  const [hasIban, setHasIban] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
@@ -32,6 +33,13 @@ export default function CreateListing() {
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []))
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from('profiles').select('iban').eq('id', user.id).single().then(({ data }) => {
+          if (data && data.iban) setHasIban(true)
+        })
+      }
+    })
   }, [])
 
   // City changed
@@ -107,6 +115,11 @@ export default function CreateListing() {
   }
 
   async function handleSubmit() {
+    if (!hasIban) {
+      alert("Lütfen önce profilinizden IBAN bilginizi ekleyin. Aksi takdirde satış gelirlerinizi alamayabilirsiniz.")
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     if (!validate()) {
       alert("Lütfen formdaki kırmızı ile işaretlenmiş hataları düzeltin.")
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -153,6 +166,20 @@ export default function CreateListing() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">İlan Ver</h2>
         <p className="text-gray-500 text-sm mb-6">İlanınız oluşturulduktan hemen sonra yayına girecektir.</p>
+
+        {!hasIban && (
+          <div className="bg-red-50 border border-red-200 p-4 rounded-xl mb-6">
+            <h3 className="text-red-800 font-bold mb-1">⚠️ IBAN Bilgisi Eksik!</h3>
+            <p className="text-red-600 text-sm mb-3">İlanınız satıldığında paranızın yatırılabilmesi için profilinize IBAN bilgisi eklemeniz gerekmektedir.</p>
+            <button onClick={async () => {
+              const { data } = await supabase.auth.getUser()
+              navigate('/profile/' + data.user?.id)
+            }} 
+              className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition">
+              IBAN Eklemek İçin Profilime Git
+            </button>
+          </div>
+        )}
 
         {errors.general && (
           <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{errors.general}</p>

@@ -195,12 +195,18 @@ export default function MyTransactions() {
                     ) : (
                       <div className="space-y-3">
                         {tx.status === 'pending' && (
-                          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex justify-between items-center">
-                            <div>
-                              <p className="text-amber-800 text-sm font-bold">Ürünü Esnafa Bırakın</p>
-                              <p className="text-amber-600 text-xs">Sisteme girmek için esnafa şu kodu verin:</p>
+                          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <p className="text-amber-800 text-sm font-bold">Cihazı Ekspertiz İçin Teslim Edin</p>
+                                <p className="text-amber-700 text-xs mt-1">Alıcı ödeme adımına geçmek için ekspertiz raporunu bekliyor. Lütfen cihazı alıcının seçtiği aşağıdaki noktaya <b>elden</b> veya <b>kargo</b> ile ulaştırın:</p>
+                                <p className="text-amber-900 text-xs font-bold mt-2">📍 {tx.buyer_shop?.shop_name} - {tx.buyer_shop?.city} ({tx.buyer_shop?.full_address})</p>
+                              </div>
                             </div>
-                            <span className="text-2xl font-mono font-black text-amber-700 tracking-widest">{tx.drop_off_code}</span>
+                            <div className="bg-white/50 p-3 rounded-lg flex justify-between items-center border border-amber-100">
+                               <p className="text-amber-800 text-xs font-bold">Teslimat Kodu (Esnafa verin veya kargo paketine yazın):</p>
+                               <span className="text-2xl font-mono font-black text-amber-700 tracking-widest">{tx.drop_off_code}</span>
+                            </div>
                           </div>
                         )}
                         {(tx.status === 'dropped_off_at_seller_shop' || tx.status === 'report_created') && (

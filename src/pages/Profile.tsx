@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('')
   const [city, setCity] = useState('')
   const [phone, setPhone] = useState('')
+  const [iban, setIban] = useState('')
   
   // Review form states
   const [showReviewModal, setShowReviewModal] = useState(false)
@@ -47,6 +48,7 @@ export default function ProfilePage() {
     setFullName(data?.full_name || '')
     setCity(data?.city || '')
     setPhone(data?.phone || '')
+    setIban(data?.iban || '')
 
     const { data: listingData } = await supabase
       .from('listings')
@@ -67,7 +69,7 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
-    await supabase.from('profiles').update({ full_name: fullName, city, phone }).eq('id', id)
+    await supabase.from('profiles').update({ full_name: fullName, city, phone, iban }).eq('id', id)
     setEditing(false)
     fetchProfile()
   }
@@ -204,6 +206,11 @@ export default function ProfilePage() {
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 <p className="text-xs text-gray-400 mt-1">Numaranızı değiştirirseniz yeniden doğrulamanız gerekecektir.</p>
               </div>
+              <div>
+                <input value={iban} onChange={e => setIban(e.target.value)}
+                  placeholder="IBAN (Satış gelirleriniz bu hesaba yatırılacaktır TR...)"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
               <div className="flex gap-2 mt-2">
                 <button onClick={handleSave}
                   className="bg-emerald-500 text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-emerald-600 transition">
@@ -249,6 +256,12 @@ export default function ProfilePage() {
                           )
                         )}
                       </div>
+                    )}
+                    {isOwner && profile.iban && (
+                      <p className="text-sm text-gray-500 mt-1">🏦 IBAN: {profile.iban}</p>
+                    )}
+                    {isOwner && !profile.iban && (
+                      <p className="text-xs text-red-500 mt-1 bg-red-50 inline-block px-2 py-1 rounded">⚠️ Ürün satabilmek için IBAN eklemelisiniz.</p>
                     )}
                   </div>
                   {!isOwner && currentUser && (

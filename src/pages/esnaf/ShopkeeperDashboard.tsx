@@ -82,6 +82,15 @@ export default function ShopkeeperDashboard() {
     <ShopkeeperLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         
+        {/* Motivasyon Banner'ı */}
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-md flex items-center justify-between">
+           <div>
+              <h2 className="text-xl font-bold mb-1">Ekspertiz Yapın, Kazancınızı Artırın! 💰</h2>
+              <p className="text-emerald-50 text-sm">Onayladığınız her cihaz işlemi için işlem bedeli üzerinden komisyon kazanırsınız. Bekleyen paketleri hemen inceleyin.</p>
+           </div>
+           <div className="hidden md:block text-4xl">🛠️</div>
+        </div>
+
         {/* Metrikler */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard 

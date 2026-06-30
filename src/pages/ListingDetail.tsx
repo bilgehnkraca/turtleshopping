@@ -250,35 +250,13 @@ export default function ListingDetail() {
 
     setBuyLoading(true)
     try {
-      let finalPrice = listing.price
-      const offerId = searchParams.get('offer_id')
-      
-      if (offerId) {
-        const { data: offerData } = await supabase
-          .from('offers')
-          .select('amount, status')
-          .eq('id', offerId)
-          .single()
-          
-        if (offerData && offerData.status === 'accepted') {
-          finalPrice = offerData.amount
-        }
-      }
+      const offerId = searchParams.get('offer_id') || null;
 
-      const commission = finalPrice * 0.05 // %5 Komisyon simülasyonu
-      const dropOffCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-      const pickUpCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-
-      const { error } = await supabase.from('transactions').insert({
-        listing_id: id,
-        buyer_id: currentUser,
-        seller_id: listing.user_id,
-        buyer_shop_id: selectedShop,
-        price: finalPrice,
-        commission: commission,
-        status: 'pending',
-        drop_off_code: dropOffCode,
-        pick_up_code: pickUpCode
+      const { data, error } = await supabase.rpc('create_secure_transaction', {
+        p_listing_id: id,
+        p_buyer_id: currentUser,
+        p_buyer_shop_id: selectedShop,
+        p_offer_id: offerId
       })
 
       if (error) throw error
@@ -674,7 +652,7 @@ export default function ListingDetail() {
             </div>
             
             <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-              Ödeme yapmak için acele etmeyin! Satıcı ürünü kendi <b>TurtleNokta</b>'sına bıraktığında, teknisyenlerimiz ücretsiz bir ekspertiz raporu hazırlayacak. 
+              Ödeme yapmak için acele etmeyin! Satıcı ürünü (elden veya kargoyla) seçtiğiniz <b>TurtleNokta</b>'ya ulaştırdığında, teknisyenlerimiz cihaz için detaylı ve ücretsiz bir ekspertiz raporu hazırlayacak. 
               Raporu inceleyip onayladıktan sonra ödemenizi güvenli havuza (Escrow) yapabilirsiniz.
             </p>
 
@@ -693,19 +671,25 @@ export default function ListingDetail() {
               </div>
             </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-2">Teslimat Noktası Seçin (TurtleNokta)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Teslimat Noktası Seçin (Ekspertiz Noktası)</label>
             <select value={selectedShop} onChange={e => setSelectedShop(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white mb-6">
-              <option value="">En yakın noktayı seçin...</option>
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white mb-2">
+              <option value="">Size en yakın noktayı seçin...</option>
               {shops.map(p => (
                 <option key={p.id} value={p.id}>{p.shop_name} — {p.district}, {p.city}</option>
               ))}
             </select>
+            <p className="text-xs text-gray-400 mb-6">Not: Satıcı sizinle aynı şehirde değilse cihazı bu noktaya kargolayacaktır.</p>
 
             <button onClick={handleSecureBuy} disabled={!selectedShop || buyLoading}
-              className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed">
+              className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed mb-3">
               {buyLoading ? 'İşleniyor...' : 'Satıcıya İstek Gönder (Henüz Ödeme Yok)'}
             </button>
+            <div className="flex justify-center items-center gap-4 text-gray-400 text-xs">
+               <span>🔒 256-bit SSL</span>
+               <span>🛡️ iyzico Koruması</span>
+               <span>💳 Güvenli Ödeme Altyapısı</span>
+            </div>
           </div>
         </div>
       )}
