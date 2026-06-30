@@ -252,7 +252,7 @@ export default function ListingDetail() {
     try {
       const offerId = searchParams.get('offer_id') || null;
 
-      const { data, error } = await supabase.rpc('create_secure_transaction', {
+      const { error } = await supabase.rpc('create_secure_transaction', {
         p_listing_id: id,
         p_buyer_id: currentUser,
         p_buyer_shop_id: selectedShop,
