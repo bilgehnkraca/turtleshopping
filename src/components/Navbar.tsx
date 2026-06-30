@@ -12,6 +12,20 @@ export function Navbar() {
   useEffect(() => {
     if (user) {
       fetchUnreadCount()
+
+      const channel = supabase
+        .channel(`notifications:${user.id}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        }, () => {
+          fetchUnreadCount()
+        })
+        .subscribe()
+
+      return () => { supabase.removeChannel(channel) }
     }
   }, [user])
 
