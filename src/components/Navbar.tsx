@@ -7,13 +7,15 @@ import { useAuth } from '../hooks/useAuth'
 export function Navbar() {
   const { user, signOut, isPointOwner, isShopkeeper } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     if (user) {
       fetchUnreadCount()
+      fetchUnreadMessages()
 
-      const channel = supabase
+      const notifChannel = supabase
         .channel(`notifications:${user.id}`)
         .on('postgres_changes', {
           event: '*',
@@ -25,7 +27,21 @@ export function Navbar() {
         })
         .subscribe()
 
-      return () => { supabase.removeChannel(channel) }
+      const msgChannel = supabase
+        .channel(`messages_nav:${user.id}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        }, () => {
+          fetchUnreadMessages()
+        })
+        .subscribe()
+
+      return () => { 
+        supabase.removeChannel(notifChannel)
+        supabase.removeChannel(msgChannel)
+      }
     }
   }, [user])
 
@@ -38,6 +54,20 @@ export function Navbar() {
       .eq('is_read', false)
     
     setUnreadCount(count || 0)
+  }
+
+  async function fetchUnreadMessages() {
+    if (!user) return
+    // Since we can't filter by a join easily in count, we fetch unread messages where we are part of conversation but not sender.
+    // However, an easier way is to just query messages where sender != user and is_read = false, 
+    // and let RLS filter out messages from conversations we're not part of!
+    const { count } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .neq('sender_id', user.id)
+      .eq('is_read', false)
+    
+    setUnreadMessages(count || 0)
   }
 
   return (
@@ -75,8 +105,16 @@ export function Navbar() {
                 </div>
                 Bildirimler
               </Link>
-              <Link to="/messages" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                <MessageSquare className="w-4 h-4" /> Mesajlar
+              <Link to="/messages" className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition relative">
+                <div className="relative flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full border border-white min-w-[14px] text-center">
+                      {unreadMessages}
+                    </span>
+                  )}
+                </div>
+                Mesajlar
               </Link>
               <Link to="/transactions" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
                 <ShieldCheck className="w-4 h-4" /> İşlemlerim

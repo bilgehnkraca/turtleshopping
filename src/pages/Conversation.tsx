@@ -109,6 +109,7 @@ export default function Conversation() {
       content: text.trim(),
     })
     setNewMessage('')
+    fetchMessages()
   }
 
   async function handleAcceptOffer() {
