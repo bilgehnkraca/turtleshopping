@@ -521,7 +521,7 @@ export default function ListingDetail() {
               <>
                 {listing.status === 'active' && (
                   <>
-                    {(listing.categories?.slug === 'telefon' || listing.categories?.slug === 'tablet' || listing.categories?.slug === 'elektronik') ? (
+                    {['telefon', 'tablet', 'bilgisayar', 'televizyon', 'akilli-saat', 'kulaklik-ses', 'oyun-konsolu', 'kamera', 'kucuk-ev-aletleri', 'bilgisayar-parcalari', 'cevre-birimleri', 'elektronik'].includes(listing.categories?.slug || '') ? (
                       <>
                         <button onClick={() => setShowBuyModal(true)}
                           className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
@@ -544,7 +544,7 @@ export default function ListingDetail() {
                     ) : (
                       <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-center">
                         <p className="text-gray-800 font-bold mb-1">🐢 TurtleGüvence Çok Yakında!</p>
-                        <p className="text-gray-500 text-xs mb-3">Şu an için ekspertiz ve havuz ödeme hizmetimiz sadece <b>Telefon</b> ve <b>Tablet</b> kategorilerinde aktiftir.</p>
+                        <p className="text-gray-500 text-xs mb-3">Şu an için ekspertiz ve havuz ödeme hizmetimiz sadece <b>Elektronik</b> kategorisindeki ürünlerde aktiftir.</p>
                         <button onClick={handleContact}
                             className="w-full bg-emerald-50 text-emerald-700 py-3 rounded-xl font-bold hover:bg-emerald-100 transition border border-emerald-200 text-sm">
                             💬 Satıcıya Mesaj At
