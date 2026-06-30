@@ -33,7 +33,11 @@ export default function Home() {
       .eq('status', 'active')
 
     if (search) query = query.ilike('title', `%${search}%`)
-    if (selectedCategory) query = query.eq('category_id', selectedCategory)
+    if (selectedCategory) {
+      const subCategoryIds = categories.filter(c => c.parent_id === Number(selectedCategory)).map(c => c.id)
+      const allIds = [Number(selectedCategory), ...subCategoryIds]
+      query = query.in('category_id', allIds)
+    }
     if (selectedCity) query = query.eq('city', selectedCity)
     if (minPrice) query = query.gte('price', minPrice)
     if (maxPrice) query = query.lte('price', maxPrice)
@@ -159,7 +163,7 @@ export default function Home() {
           <div className="mb-8">
             <h2 className="text-lg font-bold text-gray-700 mb-4">Kategoriler</h2>
             <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
-              {categories.map(c => (
+              {categories.filter(c => !c.parent_id).map(c => (
                 <button
                   key={c.id}
                   onClick={() => setSelectedCategory(prev => prev === String(c.id) ? '' : String(c.id))}
@@ -173,6 +177,22 @@ export default function Home() {
                 </button>
               ))}
             </div>
+
+            {/* Subcategories (if a parent is selected) */}
+            {selectedCategory && categories.some(c => c.parent_id === Number(selectedCategory)) && (
+              <div className="mt-4 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <div className="flex flex-wrap gap-2">
+                  {categories.filter(c => c.parent_id === Number(selectedCategory)).map(sub => (
+                    <button
+                      key={sub.id}
+                      onClick={() => setSelectedCategory(String(sub.id))}
+                      className="px-4 py-2 bg-white rounded-full text-sm font-medium text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition shadow-sm">
+                      {sub.icon} {sub.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
