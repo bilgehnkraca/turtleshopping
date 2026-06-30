@@ -15,6 +15,7 @@ export default function CreateListing() {
 
   // Step 1: Category
   const [categories, setCategories] = useState<Category[]>([])
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null)
   const [categoryId, setCategoryId] = useState<number | null>(null)
 
   // Step 2: Attributes
@@ -261,14 +262,35 @@ export default function CreateListing() {
           
           {step === 1 && (
             <div className="animate-fade-in">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Ne satıyorsunuz?</h2>
+              <div className="flex items-center gap-3 mb-4">
+                {selectedParentId && (
+                  <button onClick={() => setSelectedParentId(null)} className="text-gray-500 hover:text-gray-800 transition">
+                    ←
+                  </button>
+                )}
+                <h2 className="text-xl font-bold text-gray-800">
+                  {selectedParentId ? categories.find(c => c.id === selectedParentId)?.name + ' Alt Kategorileri' : 'Ne satıyorsunuz?'}
+                </h2>
+              </div>
+              
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {categories.map(c => (
-                  <button key={c.id} onClick={() => setCategoryId(c.id)}
+                {(selectedParentId 
+                  ? categories.filter(c => c.parent_id === selectedParentId)
+                  : categories.filter(c => !c.parent_id)
+                ).map(c => (
+                  <button key={c.id} onClick={() => {
+                    const subs = categories.filter(x => x.parent_id === c.id)
+                    if (subs.length > 0) {
+                      setSelectedParentId(c.id)
+                      setCategoryId(null)
+                    } else {
+                      setCategoryId(c.id)
+                    }
+                  }}
                     className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition ${
                       categoryId === c.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50 text-gray-700'
                     }`}>
-                    <span className="text-3xl mb-2">{c.icon || '📦'}</span>
+                    <span className="text-3xl mb-2">{c.icon || (selectedParentId ? '↳' : '📦')}</span>
                     <span className="font-semibold text-sm">{c.name}</span>
                   </button>
                 ))}
