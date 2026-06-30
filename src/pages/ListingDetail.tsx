@@ -69,7 +69,7 @@ export default function ListingDetail() {
   async function fetchListing() {
     const { data } = await supabase
       .from('listings')
-      .select('*, profiles!listings_user_id_fkey(username, city, full_name), categories(name, icon)')
+      .select('*, profiles!listings_user_id_fkey(username, city, full_name), categories(name, icon, slug)')
       .eq('id', id)
       .single()
     setListing(data)
