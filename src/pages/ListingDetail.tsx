@@ -521,7 +521,7 @@ export default function ListingDetail() {
               <>
                 {listing.status === 'active' && (
                   <>
-                    {(listing.categories?.slug === 'telefon' || listing.categories?.slug === 'tablet') ? (
+                    {(listing.categories?.slug === 'telefon' || listing.categories?.slug === 'tablet' || listing.categories?.slug === 'elektronik') ? (
                       <>
                         <button onClick={() => setShowBuyModal(true)}
                           className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
