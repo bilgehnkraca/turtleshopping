@@ -212,7 +212,8 @@ export default function ListingDetail() {
         listing_id: id,
         buyer_id: currentUser,
         seller_id: listing.user_id,
-        amount: Number(offerAmount)
+        amount: Number(offerAmount),
+        sender_id: currentUser
       })
 
       if (offerError) throw offerError
