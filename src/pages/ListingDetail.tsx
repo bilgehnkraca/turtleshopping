@@ -41,6 +41,7 @@ export default function ListingDetail() {
   const [reportLoading, setReportLoading] = useState(false)
   const [reportSent, setReportSent] = useState(false)
   const [similarListings, setSimilarListings] = useState<any[]>([])
+  const [listingAttributes, setListingAttributes] = useState<any[]>([])
 
   // Teklif State
   const [showOfferModal, setShowOfferModal] = useState(false)
@@ -112,6 +113,13 @@ export default function ListingDetail() {
 
     fetchListing()
     fetchOffer()
+    
+    supabase.from('listing_attributes')
+      .select('*, category_attributes(name), attribute_values(value)')
+      .eq('listing_id', id)
+      .then(({data}) => {
+        if (data) setListingAttributes(data)
+      })
     
     supabase.auth.getUser().then(({ data }) => {
       const userId = data.user?.id || null
@@ -467,8 +475,24 @@ export default function ListingDetail() {
                )}
             </div>
 
+            {listingAttributes && listingAttributes.length > 0 && (
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6">
+                <h3 className="font-bold text-gray-800 mb-3 text-sm">Ürün Özellikleri</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {listingAttributes.map((attr, idx) => (
+                    <div key={idx} className="flex flex-col">
+                      <span className="text-xs text-gray-500">{attr.category_attributes?.name}</span>
+                      <span className="text-sm font-medium text-gray-800">
+                        {attr.attribute_values ? attr.attribute_values.value : attr.custom_value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {listing.description && (
-              <p className="text-gray-600 leading-relaxed mb-6">{listing.description}</p>
+              <p className="text-gray-600 leading-relaxed mb-6 whitespace-pre-line">{listing.description}</p>
             )}
 
             <p className="text-xs text-gray-400 mb-6">{listing.view_count} görüntülenme</p>

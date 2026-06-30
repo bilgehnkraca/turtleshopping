@@ -2,34 +2,44 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Navbar } from '../components/Navbar'
-import type { Category } from '../types'
+import type { Category, CategoryAttribute, AttributeValue } from '../types'
 import locationsData from '../data/locations.json'
 
 const locationDB = locationsData as any[]
 
 export default function CreateListing() {
   const navigate = useNavigate()
-  const [categories, setCategories] = useState<Category[]>([])
+  const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [hasIban, setHasIban] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Step 1: Category
+  const [categories, setCategories] = useState<Category[]>([])
+  const [categoryId, setCategoryId] = useState<number | null>(null)
+
+  // Step 2: Attributes
+  const [categoryAttributes, setCategoryAttributes] = useState<CategoryAttribute[]>([])
+  const [allAttributeValues, setAllAttributeValues] = useState<AttributeValue[]>([])
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({}) // attr_id -> value_id (or text)
+
+  // Step 3: Photos & Condition
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
-
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [price, setPrice] = useState('')
-  const [categoryId, setCategoryId] = useState('')
   const [condition, setCondition] = useState('good')
+
+  // Step 4: Details
+  const [price, setPrice] = useState('')
   const [city, setCity] = useState('')
   const [district, setDistrict] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
   const [isTradeable, setIsTradeable] = useState(false)
   const [isBargainable, setIsBargainable] = useState(false)
-
-  // Location arrays
   const [districts, setDistricts] = useState<any[]>([])
   const [neighborhoods, setNeighborhoods] = useState<any[]>([])
+
+  // Step 5: Review
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
 
   useEffect(() => {
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []))
@@ -42,7 +52,30 @@ export default function CreateListing() {
     })
   }, [])
 
-  // City changed
+  // Fetch Attributes when Category selected
+  useEffect(() => {
+    if (categoryId) {
+      const fetchAttrs = async () => {
+        const { data: attrs } = await supabase.from('category_attributes')
+          .select('*').eq('category_id', categoryId).order('order', { ascending: true })
+        
+        if (attrs && attrs.length > 0) {
+          setCategoryAttributes(attrs)
+          const attrIds = attrs.map((a: any) => a.id)
+          const { data: vals } = await supabase.from('attribute_values')
+            .select('*').in('attribute_id', attrIds).order('order', { ascending: true })
+          if (vals) setAllAttributeValues(vals)
+        } else {
+          setCategoryAttributes([])
+          setAllAttributeValues([])
+        }
+        setSelectedAttributes({})
+      }
+      fetchAttrs()
+    }
+  }, [categoryId])
+
+  // Location logic
   useEffect(() => {
     setDistrict('')
     setNeighborhood('')
@@ -54,7 +87,6 @@ export default function CreateListing() {
     }
   }, [city])
 
-  // District changed
   useEffect(() => {
     setNeighborhood('')
     if (district && districts && districts.length > 0) {
@@ -70,41 +102,64 @@ export default function CreateListing() {
     }
   }, [district, districts])
 
+  // Image handling
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []).slice(0, 5)
     setImages(files)
     setPreviews(files.map(f => URL.createObjectURL(f)))
   }
 
-  function validate() {
-    const newErrors: Record<string, string> = {}
+  // Generate Title from Attributes
+  useEffect(() => {
+    if (step === 5) {
+      let generatedTitle = ""
+      const selectedCat = categories.find(c => c.id === categoryId)
+      
+      const attrNames: string[] = []
+      categoryAttributes.forEach(attr => {
+        const valId = selectedAttributes[attr.id]
+        if (valId) {
+          if (attr.type === 'select') {
+            const valObj = allAttributeValues.find(v => v.id === valId)
+            if (valObj) attrNames.push(valObj.value)
+          } else {
+            attrNames.push(valId)
+          }
+        }
+      })
+      
+      if (attrNames.length > 0) {
+        generatedTitle = attrNames.join(' ')
+      } else if (selectedCat) {
+        generatedTitle = selectedCat.name + " Ürünü"
+      }
+      setTitle(generatedTitle)
+      if (!description) {
+        setDescription(`${generatedTitle} satılıktır. Detaylı bilgi için mesaj atabilirsiniz.`)
+      }
+    }
+  }, [step])
 
-    if (title.trim().length < 10)
-      newErrors.title = 'Başlık en az 10 karakter olmalı'
-    if (description.trim().length < 20)
-      newErrors.description = 'Açıklama en az 20 karakter olmalı'
-    if (!price || parseFloat(price) <= 0)
-      newErrors.price = 'Geçerli bir fiyat girin'
-    if (!categoryId)
-      newErrors.category = 'Kategori seçin'
-    if (!city)
-      newErrors.city = 'Şehir seçin'
-    if (!district)
-      newErrors.district = 'İlçe seçin'
-    if (!neighborhood)
-      newErrors.neighborhood = 'Mahalle seçin'
-    if (images.length === 0)
-      newErrors.images = 'En az 1 fotoğraf ekleyin'
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  // Validation
+  function canGoNext() {
+    if (step === 1) return categoryId !== null
+    if (step === 2) {
+      // Check required attributes
+      for (const attr of categoryAttributes) {
+        if (attr.is_required && !selectedAttributes[attr.id]) return false
+      }
+      return true
+    }
+    if (step === 3) return images.length > 0
+    if (step === 4) return parseFloat(price) > 0 && city && district && neighborhood
+    return true
   }
 
   async function uploadImages(userId: string): Promise<string[]> {
     const urls: string[] = []
     for (const file of images) {
       const ext = file.name.split('.').pop()
-      const path = `${userId}/${Date.now()}.${ext}`
+      const path = `${userId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`
       const { error } = await supabase.storage.from('listings').upload(path, file)
       if (!error) {
         const { data } = supabase.storage.from('listings').getPublicUrl(path)
@@ -116,13 +171,11 @@ export default function CreateListing() {
 
   async function handleSubmit() {
     if (!hasIban) {
-      alert("Lütfen önce profilinizden IBAN bilginizi ekleyin. Aksi takdirde satış gelirlerinizi alamayabilirsiniz.")
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      alert("Lütfen önce profilinizden IBAN bilginizi ekleyin.")
       return
     }
-    if (!validate()) {
-      alert("Lütfen formdaki kırmızı ile işaretlenmiş hataları düzeltin.")
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (!title || title.length < 5) {
+      alert("Başlık çok kısa")
       return
     }
     setLoading(true)
@@ -132,12 +185,12 @@ export default function CreateListing() {
 
     const imageUrls = await uploadImages(user.id)
 
-    const { error } = await supabase.from('listings').insert({
+    const { data: listingData, error } = await supabase.from('listings').insert({
       user_id: user.id,
       title: title.trim(),
       description: description.trim(),
       price: parseFloat(price),
-      category_id: parseInt(categoryId),
+      category_id: categoryId,
       condition,
       city,
       district,
@@ -146,17 +199,45 @@ export default function CreateListing() {
       status: 'active',
       is_tradeable: isTradeable,
       is_bargainable: isBargainable,
+    }).select().single()
+
+    if (error || !listingData) {
+      alert("Hata: " + error?.message)
+      setLoading(false)
+      return
+    }
+
+    // Insert attributes
+    const attrInserts = Object.keys(selectedAttributes).map(attrId => {
+      const attrDef = categoryAttributes.find(a => a.id === attrId)
+      const val = selectedAttributes[attrId]
+      return {
+        listing_id: listingData.id,
+        attribute_id: attrId,
+        value_id: attrDef?.type === 'select' ? val : null,
+        custom_value: attrDef?.type !== 'select' ? val : null,
+      }
     })
 
-    if (error) {
-      console.error("Listing insert error:", error)
-      setErrors({ general: error.message })
-      alert("Hata: " + error.message)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    } else {
-      navigate('/listing-submitted')
+    if (attrInserts.length > 0) {
+      await supabase.from('listing_attributes').insert(attrInserts)
     }
+
+    navigate('/listing-submitted')
     setLoading(false)
+  }
+
+  // Dependent attributes logic
+  function getOptionsForAttribute(attr: CategoryAttribute) {
+    const options = allAttributeValues.filter(v => v.attribute_id === attr.id)
+    // Check if options have parent_value_id
+    const hasParents = options.some(o => o.parent_value_id !== null)
+    if (!hasParents) return options
+
+    // If they have parents, filter by currently selected parent
+    // Find which attribute could be the parent. We just check if any selected value matches parent_value_id
+    const selectedVals = Object.values(selectedAttributes)
+    return options.filter(o => !o.parent_value_id || selectedVals.includes(o.parent_value_id))
   }
 
   return (
@@ -164,201 +245,207 @@ export default function CreateListing() {
       <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">İlan Ver</h2>
-        <p className="text-gray-500 text-sm mb-6">İlanınız oluşturulduktan hemen sonra yayına girecektir.</p>
+        <div className="flex items-center gap-2 mb-6 text-sm text-gray-500 font-medium">
+          <span className={step >= 1 ? 'text-emerald-600' : ''}>Kategori</span>
+          <span>→</span>
+          <span className={step >= 2 ? 'text-emerald-600' : ''}>Özellikler</span>
+          <span>→</span>
+          <span className={step >= 3 ? 'text-emerald-600' : ''}>Fotoğraf</span>
+          <span>→</span>
+          <span className={step >= 4 ? 'text-emerald-600' : ''}>Detaylar</span>
+          <span>→</span>
+          <span className={step >= 5 ? 'text-emerald-600' : ''}>Yayınla</span>
+        </div>
 
-        {!hasIban && (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-xl mb-6">
-            <h3 className="text-red-800 font-bold mb-1">⚠️ IBAN Bilgisi Eksik!</h3>
-            <p className="text-red-600 text-sm mb-3">İlanınız satıldığında paranızın yatırılabilmesi için profilinize IBAN bilgisi eklemeniz gerekmektedir.</p>
-            <button onClick={async () => {
-              const { data } = await supabase.auth.getUser()
-              navigate('/profile/' + data.user?.id)
-            }} 
-              className="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition">
-              IBAN Eklemek İçin Profilime Git
-            </button>
-          </div>
-        )}
-
-        {errors.general && (
-          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{errors.general}</p>
-        )}
-
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
-
-          {/* Fotoğraflar */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fotoğraflar <span className="text-red-500">*</span>
-              <span className="text-gray-400 font-normal ml-1">(max 5)</span>
-            </label>
-            <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition bg-gray-50 ${
-              errors.images ? 'border-red-300' : 'border-gray-200 hover:border-emerald-400'
-            }`}>
-              <span className="text-gray-400 text-sm">📷 Fotoğraf ekle</span>
-              <span className="text-gray-300 text-xs mt-1">JPG, PNG, WEBP</span>
-              <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
-            </label>
-            {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
-            {previews.length > 0 && (
-              <div className="flex gap-2 mt-3 flex-wrap">
-                {previews.map((p, i) => (
-                  <img key={i} src={p} className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          
+          {step === 1 && (
+            <div className="animate-fade-in">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Ne satıyorsunuz?</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {categories.map(c => (
+                  <button key={c.id} onClick={() => setCategoryId(c.id)}
+                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition ${
+                      categoryId === c.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50 text-gray-700'
+                    }`}>
+                    <span className="text-3xl mb-2">{c.icon || '📦'}</span>
+                    <span className="font-semibold text-sm">{c.name}</span>
+                  </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="animate-fade-in">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Ürün Özellikleri</h2>
+              {categoryAttributes.length === 0 ? (
+                <p className="text-gray-500 text-sm mb-4">Bu kategori için ek özellik bulunmuyor.</p>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {categoryAttributes.map(attr => (
+                    <div key={attr.id}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {attr.name} {attr.is_required && <span className="text-red-500">*</span>}
+                      </label>
+                      {attr.type === 'select' ? (
+                        <select 
+                          value={selectedAttributes[attr.id] || ''} 
+                          onChange={e => setSelectedAttributes(prev => ({ ...prev, [attr.id]: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
+                        >
+                          <option value="">Seçiniz...</option>
+                          {getOptionsForAttribute(attr).map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.value}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input 
+                          type={attr.type === 'number' ? 'number' : 'text'}
+                          value={selectedAttributes[attr.id] || ''}
+                          onChange={e => setSelectedAttributes(prev => ({ ...prev, [attr.id]: e.target.value }))}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 text-sm"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="animate-fade-in">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Durum ve Fotoğraflar</h2>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ürün Durumu</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'new', label: 'Sıfır' },
+                    { id: 'like_new', label: 'Sıfır Gibi' },
+                    { id: 'good', label: 'İyi' },
+                    { id: 'fair', label: 'Makul' }
+                  ].map(c => (
+                    <button key={c.id} onClick={() => setCondition(c.id)}
+                      className={`py-3 rounded-xl border-2 text-sm font-bold transition ${
+                        condition === c.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 text-gray-600 hover:border-gray-200'
+                      }`}>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fotoğraflar <span className="text-red-500">*</span>
+                  <span className="text-gray-400 font-normal ml-1">(max 5)</span>
+                </label>
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-200 hover:border-emerald-400 rounded-xl cursor-pointer transition bg-gray-50">
+                  <span className="text-gray-400 text-sm">📷 Fotoğraf ekle</span>
+                  <input type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
+                </label>
+                {previews.length > 0 && (
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {previews.map((p, i) => (
+                      <img key={i} src={p} className="w-20 h-20 object-cover rounded-lg border border-gray-200" />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="animate-fade-in">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Fiyat ve Konum</h2>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fiyat (₺) <span className="text-red-500">*</span>
+                </label>
+                <input type="number" value={price} onChange={e => setPrice(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 text-lg font-bold text-emerald-600" />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Konum Seçimi <span className="text-red-500">*</span></label>
+                <div className="flex flex-col gap-3">
+                  <select value={city} onChange={e => setCity(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white text-sm">
+                    <option value="">İl Seçin</option>
+                    {locationDB.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                  </select>
+                  
+                  <select value={district} onChange={e => setDistrict(e.target.value)} disabled={!city}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white text-sm disabled:bg-gray-50">
+                    <option value="">İlçe Seçin</option>
+                    {districts.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
+                  </select>
+                  
+                  <select value={neighborhood} onChange={e => setNeighborhood(e.target.value)} disabled={!district}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white text-sm disabled:bg-gray-50">
+                    <option value="">Mahalle Seçin</option>
+                    {neighborhoods.map(n => <option key={n.name} value={n.name}>{n.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={isTradeable} onChange={e => setIsTradeable(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" />
+                  <span className="text-sm text-gray-700 font-medium">Takasa Açık</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={isBargainable} onChange={e => setIsBargainable(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500" />
+                  <span className="text-sm text-gray-700 font-medium">Pazarlığa Açık</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="animate-fade-in">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Son Kontrol</h2>
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
+                <p className="text-xs text-gray-500 mb-1">Sistem tarafından oluşturulan ilan başlığı:</p>
+                <input value={title} onChange={e => setTitle(e.target.value)}
+                  className="w-full px-4 py-2 mb-4 rounded-lg border border-gray-300 font-bold text-gray-800 focus:ring-2 focus:ring-emerald-500" />
+                
+                <p className="text-xs text-gray-500 mb-1">Açıklama (İsterseniz düzenleyebilirsiniz):</p>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 focus:ring-2 focus:ring-emerald-500 resize-none" />
+              </div>
+
+              <div className="flex justify-between items-center px-2">
+                <p className="text-2xl font-bold text-emerald-600">{price} ₺</p>
+                <p className="text-sm text-gray-500">{city}, {district}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-8">
+            {step > 1 && (
+              <button onClick={() => setStep(s => s - 1)}
+                className="px-6 py-3 rounded-xl border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 transition">
+                Geri
+              </button>
+            )}
+            {step < 5 ? (
+              <button onClick={() => setStep(s => s + 1)} disabled={!canGoNext()}
+                className="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition disabled:opacity-50">
+                Devam Et
+              </button>
+            ) : (
+              <button onClick={handleSubmit} disabled={loading}
+                className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition disabled:opacity-50 shadow-lg shadow-emerald-200">
+                {loading ? 'Yayınlanıyor...' : 'İlanı Yayınla'}
+              </button>
             )}
           </div>
 
-          {/* Başlık */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Başlık <span className="text-red-500">*</span>
-              <span className="text-gray-400 font-normal ml-1">(min 10 karakter)</span>
-            </label>
-            <input value={title} onChange={e => {
-              setTitle(e.target.value);
-              if (e.target.value.trim().length >= 10) setErrors(prev => ({ ...prev, title: '' }));
-            }}
-              placeholder="Ürününüzü kısaca tanıtın"
-              className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                errors.title ? 'border-red-300' : 'border-gray-200'
-              }`} />
-            <div className="flex justify-between mt-1">
-              {errors.title
-                ? <p className="text-red-500 text-xs">{errors.title}</p>
-                : <span />}
-              <span className={`text-xs ${title.length < 10 ? 'text-gray-300' : 'text-emerald-500'}`}>
-                {title.length}/10
-              </span>
-            </div>
-          </div>
-
-          {/* Açıklama */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Açıklama <span className="text-red-500">*</span>
-              <span className="text-gray-400 font-normal ml-1">(min 20 karakter)</span>
-            </label>
-            <textarea value={description} onChange={e => {
-              setDescription(e.target.value);
-              if (e.target.value.trim().length >= 20) setErrors(prev => ({ ...prev, description: '' }));
-            }}
-              placeholder="Ürün hakkında detaylı bilgi verin: marka, model, kullanım süresi, kutusu var mı vs."
-              rows={4}
-              className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none ${
-                errors.description ? 'border-red-300' : 'border-gray-200'
-              }`} />
-            <div className="flex justify-between mt-1">
-              {errors.description
-                ? <p className="text-red-500 text-xs">{errors.description}</p>
-                : <span />}
-              <span className={`text-xs ${description.length < 20 ? 'text-gray-300' : 'text-emerald-500'}`}>
-                {description.length}/20
-              </span>
-            </div>
-          </div>
-
-          {/* Fiyat */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fiyat (₺) <span className="text-red-500">*</span>
-            </label>
-            <input type="number" value={price} onChange={e => setPrice(e.target.value)}
-              placeholder="0"
-              className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                errors.price ? 'border-red-300' : 'border-gray-200'
-              }`} />
-            {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
-          </div>
-
-          {/* Kategori */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Kategori <span className="text-red-500">*</span>
-            </label>
-            <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
-              className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white ${
-                errors.category ? 'border-red-300' : 'border-gray-200'
-              }`}>
-              <option value="">Seç</option>
-              {categories.map(c => (
-                <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-              ))}
-            </select>
-            {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
-          </div>
-
-          {/* Durum */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ürün Durumu</label>
-            <select value={condition} onChange={e => setCondition(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-              <option value="new">Sıfır</option>
-              <option value="like_new">Sıfır Gibi</option>
-              <option value="good">İyi</option>
-              <option value="fair">Makul</option>
-            </select>
-          </div>
-
-          {/* Konum */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Konum (İl / İlçe / Mahalle)</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <select value={city} onChange={e => setCity(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white">
-                  <option value="">İl Seçin</option>
-                  {locationDB.map(c => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
-                {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
-              </div>
-              
-              <div>
-                <select value={district} onChange={e => setDistrict(e.target.value)} disabled={!city}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100 disabled:opacity-70">
-                  <option value="">İlçe Seçin</option>
-                  {districts.map(d => (
-                    <option key={d.name} value={d.name}>{d.name}</option>
-                  ))}
-                </select>
-                {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district}</p>}
-              </div>
-              
-              <div>
-                <select value={neighborhood} onChange={e => setNeighborhood(e.target.value)} disabled={!district}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white disabled:bg-gray-100 disabled:opacity-70">
-                  <option value="">Mahalle Seçin</option>
-                  {neighborhoods.map(n => (
-                    <option key={n.name} value={n.name}>{n.name}</option>
-                  ))}
-                </select>
-                {errors.neighborhood && <p className="text-red-500 text-sm mt-1">{errors.neighborhood}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Ekstra Seçenekler */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Ekstra Seçenekler</label>
-            <div className="flex flex-col gap-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={isTradeable} onChange={e => setIsTradeable(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer" />
-                <span className="text-sm text-gray-700 font-medium">Takasa Açık (Diğer ürünlerle takas kabul ediyorum)</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={isBargainable} onChange={e => setIsBargainable(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer" />
-                <span className="text-sm text-gray-700 font-medium">Pazarlığa Açık (Fiyatta indirim yapabilirim)</span>
-              </label>
-            </div>
-          </div>
-
-          <button onClick={handleSubmit} disabled={loading}
-            className="w-full bg-emerald-500 text-white py-3 rounded-xl font-medium hover:bg-emerald-600 transition disabled:opacity-50 mt-2">
-            {loading ? 'Yükleniyor...' : 'İlanı Gönder'}
-          </button>
         </div>
       </div>
     </div>

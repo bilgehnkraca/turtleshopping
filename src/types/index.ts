@@ -108,3 +108,29 @@ export interface Offer {
   listings?: Listing
   profiles?: Profile
 }
+
+export interface CategoryAttribute {
+  id: string
+  category_id: number
+  name: string
+  type: 'select' | 'number' | 'text' | 'boolean'
+  is_required: boolean
+  order: number
+}
+
+export interface AttributeValue {
+  id: string
+  attribute_id: string
+  value: string
+  parent_value_id?: string
+  order: number
+}
+
+export interface ListingAttribute {
+  listing_id: string
+  attribute_id: string
+  value_id?: string
+  custom_value?: string
+  category_attributes?: CategoryAttribute
+  attribute_values?: AttributeValue
+}
