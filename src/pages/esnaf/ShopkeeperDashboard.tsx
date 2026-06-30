@@ -25,6 +25,8 @@ export default function ShopkeeperDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState({ incoming: 0, verified: 0, earnings: 0 });
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [returnCode, setReturnCode] = useState('');
+  const [returnLoading, setReturnLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -48,7 +50,7 @@ export default function ShopkeeperDashboard() {
         let totalEarnings = 0;
 
         txs.forEach(tx => {
-          if (tx.buyer_shop_id === shop.id && tx.status !== 'verified') incoming++;
+          if ((tx.buyer_shop_id === shop.id && tx.status !== 'verified') || (tx.seller_shop_id === shop.id && tx.status === 'return_to_seller_pending')) incoming++;
           if (tx.status === 'verified') {
             verifiedCount++;
             const commission = tx.commission || (tx.price * 0.05);
@@ -61,6 +63,44 @@ export default function ShopkeeperDashboard() {
         setRecentTransactions(txs.slice(0, 5));
       }
     }
+  }
+
+  async function handleProcessReturn() {
+    if (!returnCode) {
+      alert('Lütfen iade kodunu giriniz.');
+      return;
+    }
+
+    setReturnLoading(true);
+    const { data: shop } = await supabase.from('shop_locations').select('id').eq('profile_id', user?.id).maybeSingle();
+    
+    if (shop) {
+      const { data: tx, error: fetchErr } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('seller_shop_id', shop.id)
+        .eq('seller_pickup_code', returnCode.trim().toUpperCase())
+        .eq('status', 'return_to_seller_pending')
+        .maybeSingle();
+
+      if (fetchErr || !tx) {
+        alert('Geçersiz iade kodu veya bu dükkana ait iade bekleyen işlem bulunamadı.');
+      } else {
+        const { error: updateErr } = await supabase
+          .from('transactions')
+          .update({ status: 'returned_to_seller', updated_at: new Date().toISOString() })
+          .eq('id', tx.id);
+        
+        if (updateErr) {
+          alert('Hata: ' + updateErr.message);
+        } else {
+          alert('Cihaz başarıyla satıcıya iade edildi. İşlem tamamlandı.');
+          setReturnCode('');
+          fetchDashboardData();
+        }
+      }
+    }
+    setReturnLoading(false);
   }
 
   // Örnek veriler (Gerçek zamanlı grafik verisi henüz yok)
@@ -114,6 +154,30 @@ export default function ShopkeeperDashboard() {
             isPositive={true} 
             trend={null} 
           />
+        </div>
+
+        {/* İade İşlemi Modülü */}
+        <div className="bg-orange-50 rounded-2xl p-6 border border-orange-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-orange-900 mb-1">Satıcı İade İşlemi (İptal Edilen İşlemler)</h3>
+            <p className="text-orange-700 text-sm">Satıcı iptal edilen cihazı teslim almaya geldiğinde kodunu buraya girin.</p>
+          </div>
+          <div className="flex w-full md:w-auto gap-2">
+            <input 
+              type="text" 
+              placeholder="İADE KODU GİRİN" 
+              value={returnCode}
+              onChange={(e) => setReturnCode(e.target.value)}
+              className="px-4 py-3 border border-orange-200 rounded-xl flex-1 md:w-48 font-mono text-center font-bold text-orange-900 bg-white"
+            />
+            <button 
+              onClick={handleProcessReturn}
+              disabled={returnLoading}
+              className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition whitespace-nowrap disabled:opacity-70"
+            >
+              {returnLoading ? 'İşleniyor...' : 'Teslim Et'}
+            </button>
+          </div>
         </div>
 
         {/* Grafikler */}
@@ -206,9 +270,16 @@ export default function ShopkeeperDashboard() {
                         tx.status === 'verified' ? 'bg-emerald-100 text-emerald-700' :
                         tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                         tx.status === 'in_transit' ? 'bg-blue-100 text-blue-700' :
+                        tx.status === 'return_to_seller_pending' ? 'bg-orange-100 text-orange-700' :
+                        tx.status === 'returned_to_seller' ? 'bg-gray-200 text-gray-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {tx.status === 'verified' ? 'Doğrulandı' : tx.status === 'pending' ? 'Bekliyor' : tx.status === 'in_transit' ? 'Yolda' : tx.status}
+                        {tx.status === 'verified' ? 'Doğrulandı' : 
+                         tx.status === 'pending' ? 'Bekliyor' : 
+                         tx.status === 'in_transit' ? 'Yolda' : 
+                         tx.status === 'return_to_seller_pending' ? 'İade Bekliyor' : 
+                         tx.status === 'returned_to_seller' ? 'İade Edildi' : 
+                         tx.status}
                       </span>
                     </td>
                   </tr>

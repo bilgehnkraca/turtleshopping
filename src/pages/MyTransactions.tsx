@@ -50,6 +50,8 @@ export default function MyTransactions() {
       case 'arrived_at_buyer_shop': return <span className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-xs font-bold">Teslim Noktasında Bekliyor</span>;
       case 'verified': return <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">Tamamlandı</span>;
       case 'cancelled': return <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold">İptal Edildi</span>;
+      case 'return_to_seller_pending': return <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-xs font-bold">İade Bekleniyor</span>;
+      case 'returned_to_seller': return <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-bold">Satıcıya İade Edildi</span>;
       default: return <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-bold">{status}</span>;
     }
   };
@@ -82,9 +84,9 @@ export default function MyTransactions() {
     const confirmReject = window.confirm(`Raporu yetersiz buldunuz. İşlemi iptal edip ürünü satıcıya iade etmek istiyor musunuz?`);
     if (!confirmReject) return;
 
-    const { error } = await supabase.from('transactions').update({ status: 'cancelled' }).eq('id', activeTx.id);
+    const { error } = await supabase.rpc('cancel_secure_transaction', { p_transaction_id: activeTx.id });
     if (!error) {
-      alert('İşlem iptal edildi.');
+      alert('İşlem iptal edildi. Ürün satıcıya iade edilecektir.');
       setActiveReport(null);
       setActiveTx(null);
       fetchTransactions();
@@ -191,6 +193,18 @@ export default function MyTransactions() {
                             <span className="text-2xl font-mono font-black text-teal-700 tracking-widest">{tx.pick_up_code}</span>
                           </div>
                         )}
+                        {tx.status === 'return_to_seller_pending' && (
+                          <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                            <p className="text-orange-800 text-sm font-bold">İşlem İptal Edildi</p>
+                            <p className="text-orange-600 text-xs mt-1">Cihaz satıcıya iade ediliyor. Ücret iadeniz yakında kartınıza yansıyacaktır.</p>
+                          </div>
+                        )}
+                        {tx.status === 'returned_to_seller' && (
+                          <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                            <p className="text-gray-800 text-sm font-bold">İade Tamamlandı</p>
+                            <p className="text-gray-600 text-xs mt-1">Cihaz satıcıya iade edildi. İşlem tamamen kapandı.</p>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -213,6 +227,21 @@ export default function MyTransactions() {
                           <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
                             Ürünü teslim ettiniz. Alıcının ekspertiz raporunu onaylayıp parayı havuza atması bekleniyor.
                           </p>
+                        )}
+                        {tx.status === 'return_to_seller_pending' && (
+                          <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex justify-between items-center">
+                            <div>
+                              <p className="text-orange-800 text-sm font-bold">İşlem İptal Edildi: Cihazınızı Teslim Alın</p>
+                              <p className="text-orange-600 text-xs mt-1">Alıcı cihazı onaylamadı. Esnafa giderek iade kodunuzla cihazınızı teslim alınız.</p>
+                            </div>
+                            <span className="text-2xl font-mono font-black text-orange-700 tracking-widest ml-4">{tx.seller_pickup_code}</span>
+                          </div>
+                        )}
+                        {tx.status === 'returned_to_seller' && (
+                          <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl">
+                            <p className="text-gray-800 text-sm font-bold">İade Tamamlandı</p>
+                            <p className="text-gray-600 text-xs mt-1">Cihazınızı geri aldınız. İşlem kapandı.</p>
+                          </div>
                         )}
                       </div>
                     )}
