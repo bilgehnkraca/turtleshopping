@@ -171,7 +171,8 @@ export default function EditListing() {
       city,
       district,
       neighborhood,
-      status,
+      status: 'pending',
+      rejection_reason: null,
       updated_at: new Date().toISOString(),
     }).eq('id', id)
 

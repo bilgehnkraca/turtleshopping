@@ -71,7 +71,7 @@ export default function MyListings() {
         </div>
 
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          {['active', 'reserved', 'sold', 'deleted', 'all'].map(f => (
+          {['active', 'pending', 'rejected', 'reserved', 'sold', 'deleted', 'all'].map(f => (
             <button
               key={f}
               onClick={() => setFilter(f as any)}
@@ -81,7 +81,7 @@ export default function MyListings() {
                   : 'bg-white text-gray-500 border-2 border-transparent hover:bg-gray-100 shadow-sm'
               }`}
             >
-              {f === 'active' ? '🟢 Yayında' : f === 'reserved' ? '🐢 İşlemde' : f === 'sold' ? '🤝 Satıldı' : f === 'deleted' ? '🗑️ Silinenler' : 'Tümü'}
+              {f === 'active' ? '🟢 Yayında' : f === 'pending' ? '⏳ Onay Bekliyor' : f === 'rejected' ? '❌ Reddedildi' : f === 'reserved' ? '🐢 İşlemde' : f === 'sold' ? '🤝 Satıldı' : f === 'deleted' ? '🗑️ Silinenler' : 'Tümü'}
             </button>
           ))}
         </div>
@@ -120,6 +120,16 @@ export default function MyListings() {
                                 <span className="text-white text-xs font-bold px-2 py-1 border border-white rounded">İŞLEMDE</span>
                             </div>
                         )}
+                        {listing.status === 'pending' && (
+                            <div className="absolute inset-0 bg-blue-900 bg-opacity-60 flex items-center justify-center">
+                                <span className="text-white text-xs font-bold px-2 py-1 border border-white rounded text-center">ONAY<br/>BEKLİYOR</span>
+                            </div>
+                        )}
+                        {listing.status === 'rejected' && (
+                            <div className="absolute inset-0 bg-red-900 bg-opacity-70 flex items-center justify-center">
+                                <span className="text-white text-xs font-bold px-2 py-1 border border-white rounded">REDDEDİLDİ</span>
+                            </div>
+                        )}
                     </Link>
                     
                     <div className="flex-1 flex flex-col justify-between">
@@ -135,10 +145,20 @@ export default function MyListings() {
                     </div>
                   </div>
 
+                  {listing.status === 'rejected' && listing.rejection_reason && (
+                    <div className="mx-4 mb-3 p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-800">
+                      <strong>Ret Sebebi:</strong> {listing.rejection_reason}
+                    </div>
+                  )}
+
                   <div className="px-4 pb-4 flex gap-2">
                     {listing.status === 'reserved' ? (
                       <div className="flex-1 py-2 bg-amber-50 text-amber-700 text-xs font-bold rounded-xl text-center border border-amber-200">
                         🐢 İşlem Devam Ediyor
+                      </div>
+                    ) : listing.status === 'pending' ? (
+                      <div className="flex-1 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl text-center border border-blue-200">
+                        ⏳ Yönetici Onayı Bekleniyor
                       </div>
                     ) : (
                       <>
@@ -160,10 +180,10 @@ export default function MyListings() {
                                 🗑️
                             </button>
                         )}
-                         {listing.status === 'deleted' && (
-                            <button onClick={() => updateStatus(listing.id, 'active')}
+                        {listing.status === 'deleted' && (
+                            <button onClick={() => updateStatus(listing.id, 'pending')}
                                 className="flex-1 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl hover:bg-blue-100 transition border border-blue-200">
-                                🔄 Tekrar Yayına Al
+                                🔄 Tekrar Onaya Gönder
                             </button>
                         )}
                       </>

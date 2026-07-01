@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   });
 
   const [applications, setApplications] = useState<any[]>([]);
+  const [pendingListings, setPendingListings] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchStats() {
@@ -66,8 +67,17 @@ export default function AdminDashboard() {
       if (apps) setApplications(apps);
     }
 
+    async function fetchPendingListings() {
+      const { data: listings } = await supabase
+        .from('listings')
+        .select('*, profiles(full_name, email)')
+        .eq('status', 'pending');
+      if (listings) setPendingListings(listings);
+    }
+
     fetchStats();
     fetchApplications();
+    fetchPendingListings();
   }, []);
 
   const handleApprove = async (app: any) => {
@@ -118,6 +128,37 @@ export default function AdminDashboard() {
     if (!confirm('Reddetmek istediğinize emin misiniz?')) return;
     await supabase.from('point_applications').update({ status: 'rejected' }).eq('id', appId);
     setApplications(applications.filter(a => a.id !== appId));
+  };
+
+  const handleApproveListing = async (listingId: string, userId: string) => {
+    try {
+      await supabase.from('listings').update({ status: 'active', rejection_reason: null }).eq('id', listingId);
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        listing_id: listingId,
+        title: 'İlanınız Onaylandı! 🎉',
+        message: 'İlanınız yöneticilerimiz tarafından onaylandı ve yayına alındı.'
+      });
+      setPendingListings(prev => prev.filter(l => l.id !== listingId));
+      alert('İlan başarıyla onaylandı.');
+    } catch (e: any) { alert(e.message); }
+  };
+
+  const handleRejectListing = async (listingId: string, userId: string) => {
+    const reason = prompt('Reddetme sebebini girin (İlan sahibine bildirilecektir):');
+    if (!reason) return;
+    
+    try {
+      await supabase.from('listings').update({ status: 'rejected', rejection_reason: reason }).eq('id', listingId);
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        listing_id: listingId,
+        title: 'İlanınız Reddedildi ❌',
+        message: `İlanınız yayın kurallarımıza uymadığı için reddedildi. Sebep: ${reason}`
+      });
+      setPendingListings(prev => prev.filter(l => l.id !== listingId));
+      alert('İlan reddedildi ve kullanıcıya bildirim gönderildi.');
+    } catch (e: any) { alert(e.message); }
   };
 
   return (
@@ -187,6 +228,54 @@ export default function AdminDashboard() {
                       </button>
                       <button 
                         onClick={() => handleReject(app.id)}
+                        className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1"
+                      >
+                        <X size={16} /> Reddet
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <ShoppingBag className="text-orange-500" size={24} />
+            <h3 className="text-xl font-bold text-gray-800">Bekleyen İlan Onayları</h3>
+          </div>
+          
+          {pendingListings.length === 0 ? (
+            <div className="text-gray-500 text-center py-8">Onay bekleyen ilan bulunmamaktadır.</div>
+          ) : (
+            <div className="space-y-4">
+              {pendingListings.map(listing => (
+                <div key={listing.id} className="border border-gray-200 rounded-xl p-6 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                  <div className="flex gap-4 items-center">
+                    {listing.images && listing.images.length > 0 && (
+                       <img src={listing.images[0]} alt="listing" className="w-16 h-16 object-cover rounded-lg" />
+                    )}
+                    <div>
+                      <h4 className="font-bold text-lg text-gray-900">{listing.title}</h4>
+                      <p className="text-gray-600 text-sm mt-1">{listing.price} ₺ • {listing.city}</p>
+                      <div className="flex gap-4 mt-3 text-sm text-gray-500">
+                        <span>👤 {listing.profiles?.full_name}</span>
+                        <span>✉️ {listing.profiles?.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 min-w-[200px]">
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleApproveListing(listing.id, listing.user_id)}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1"
+                      >
+                        <Check size={16} /> Onayla
+                      </button>
+                      <button 
+                        onClick={() => handleRejectListing(listing.id, listing.user_id)}
                         className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1"
                       >
                         <X size={16} /> Reddet

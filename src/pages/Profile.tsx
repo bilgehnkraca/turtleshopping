@@ -69,7 +69,17 @@ export default function ProfilePage() {
   }
 
   async function handleSave() {
-    await supabase.from('profiles').update({ full_name: fullName, city, phone, iban }).eq('id', id)
+    let finalIban = iban?.trim() || '';
+    if (finalIban) {
+      finalIban = finalIban.replace(/\s+/g, '').toUpperCase();
+      const ibanRegex = /^TR\d{24}$/;
+      if (!ibanRegex.test(finalIban)) {
+        alert("Geçersiz IBAN formatı. Lütfen TR ile başlayan 26 haneli Türkiye IBAN numaranızı kontrol edin.");
+        return;
+      }
+    }
+
+    await supabase.from('profiles').update({ full_name: fullName, city, phone, iban: finalIban }).eq('id', id)
     setEditing(false)
     fetchProfile()
   }

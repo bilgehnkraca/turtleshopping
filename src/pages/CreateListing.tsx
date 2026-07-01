@@ -197,7 +197,7 @@ export default function CreateListing() {
       district,
       neighborhood,
       images: imageUrls,
-      status: 'active',
+      status: 'pending',
       is_tradeable: isTradeable,
       is_bargainable: isBargainable,
     }).select().single()

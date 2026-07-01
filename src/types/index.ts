@@ -31,7 +31,7 @@ export interface Listing {
   price: number
   currency: string
   condition: 'new' | 'like_new' | 'good' | 'fair'
-  status: 'active' | 'sold' | 'deleted' | 'reserved' | 'pending'
+  status: 'active' | 'sold' | 'deleted' | 'reserved' | 'pending' | 'rejected'
   city?: string
   district?: string
   neighborhood?: string
@@ -40,6 +40,7 @@ export interface Listing {
   is_tradeable?: boolean
   is_bargainable?: boolean
   is_guaranteed?: boolean
+  rejection_reason?: string
   created_at: string
   updated_at: string
   profiles?: Profile
