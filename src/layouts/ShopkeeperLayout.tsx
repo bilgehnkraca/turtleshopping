@@ -1,9 +1,16 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Package, CheckCircle, CreditCard, Settings, HelpCircle, ScanLine, Bell, Search } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const ShopkeeperLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
+  const { profile } = useAuth();
+  
+  const getInitials = (name: string) => {
+    if (!name) return 'ES';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
 
   const menuItems = [
     { path: '/esnaf/dashboard', name: 'Dashboard', icon: <Package size={20} /> },
@@ -88,11 +95,11 @@ const ShopkeeperLayout = ({ children }: { children: ReactNode }) => {
             
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200 cursor-pointer">
               <div className="text-right">
-                <div className="text-sm font-medium text-gray-900">Ahmet Yılmaz</div>
+                <div className="text-sm font-medium text-gray-900">{profile?.full_name || 'Kullanıcı'}</div>
                 <div className="text-xs text-gray-500">Esnaf Profili</div>
               </div>
               <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold border border-emerald-200">
-                AY
+                {getInitials(profile?.full_name || '')}
               </div>
             </div>
           </div>
