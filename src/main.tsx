@@ -23,6 +23,7 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import MyTransactions from './pages/MyTransactions'
 import MyListings from './pages/MyListings'
 import ApplyPoint from './pages/ApplyPoint'
+import ComingSoon from './pages/esnaf/ComingSoon'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -32,6 +33,9 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/esnaf/barkod" element={<ShopkeeperTransactions />} />
         <Route path="/esnaf/paketler" element={<ShopkeeperPackages />} />
         <Route path="/esnaf/odemeler" element={<ShopkeeperPayouts />} />
+        <Route path="/esnaf/dogrulananlar" element={<ComingSoon />} />
+        <Route path="/esnaf/ayarlar" element={<ComingSoon />} />
+        <Route path="/esnaf/destek" element={<ComingSoon />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

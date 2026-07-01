@@ -49,8 +49,16 @@ const ShopkeeperLayout = ({ children }: { children: ReactNode }) => {
           })}
         </nav>
 
-        <div className="p-6 text-xs text-emerald-200/60 opacity-80">
-          TurtleNokta © 2026
+        <div className="p-4 mt-auto border-t border-[#065b3f]/50">
+          <Link to="/" className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-emerald-100 hover:bg-[#065b3f] hover:text-white">
+            <div className="opacity-80">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            Mağazaya Dön
+          </Link>
+          <div className="mt-4 text-center text-xs text-emerald-200/50">
+            TurtleNokta © 2026
+          </div>
         </div>
       </aside>
 
