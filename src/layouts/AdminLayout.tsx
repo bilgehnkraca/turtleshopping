@@ -1,11 +1,23 @@
 import type { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Navigate } from 'react-router-dom';
 import { BarChart3, Users, LayoutDashboard, ShieldAlert, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const { profile, signOut } = useAuth();
+  const { profile, loading, isAdmin, signOut } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
   const menuItems = [
     { path: '/admin/dashboard', name: 'Genel Bakış', icon: <LayoutDashboard size={20} /> },

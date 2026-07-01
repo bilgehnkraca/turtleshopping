@@ -1,11 +1,23 @@
 import type { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Navigate } from 'react-router-dom';
 import { Package, CheckCircle, CreditCard, Settings, HelpCircle, ScanLine, Bell, Search } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 const ShopkeeperLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const { profile } = useAuth();
+  const { profile, loading, isShopkeeper, isAdmin } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!isShopkeeper && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
   
   const getInitials = (name: string) => {
     if (!name) return 'ES';
