@@ -70,7 +70,7 @@ export default function AdminDashboard() {
     async function fetchPendingListings() {
       const { data: listings } = await supabase
         .from('listings')
-        .select('*, profiles(full_name, email)')
+        .select('*, profiles!listings_user_id_fkey(full_name, email)')
         .eq('status', 'pending');
       if (listings) setPendingListings(listings);
     }
