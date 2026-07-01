@@ -31,7 +31,7 @@ export interface Listing {
   price: number
   currency: string
   condition: 'new' | 'like_new' | 'good' | 'fair'
-  status: 'active' | 'sold' | 'deleted'
+  status: 'active' | 'sold' | 'deleted' | 'reserved' | 'pending'
   city?: string
   district?: string
   neighborhood?: string

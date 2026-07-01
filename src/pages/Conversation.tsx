@@ -126,6 +126,13 @@ export default function Conversation() {
     fetchOffer(conversation.listing_id, conversation.buyer_id)
   }
 
+  async function handleCancelOffer() {
+    if (!offer || !confirm('Teklifinizi iptal etmek istediğinize emin misiniz?')) return
+    await supabase.from('offers').update({ status: 'cancelled' }).eq('id', offer.id)
+    await sendMessage(`🎁 SİSTEM: Karşı taraf ${offer.amount.toLocaleString('tr-TR')} ₺ olan teklifini iptal etti.`)
+    fetchOffer(conversation.listing_id, conversation.buyer_id)
+  }
+
   async function handleCounterOffer() {
     if (!counterAmount || !offer || !conversation?.listings?.price) return
     
@@ -189,11 +196,15 @@ export default function Conversation() {
                   : 'Teklifiniz karşı tarafın onayını bekliyor.'}
               </p>
             </div>
-            {currentUser !== offer.sender_id && (
+            {currentUser !== offer.sender_id ? (
               <div className="flex gap-2 w-full sm:w-auto">
                 <button onClick={handleAcceptOffer} className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition">Kabul Et</button>
                 <button onClick={() => setShowCounterModal(true)} className="flex-1 sm:flex-none bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 px-4 py-2 rounded-xl text-sm font-bold transition">Karşı Teklif</button>
                 <button onClick={handleRejectOffer} className="flex-1 sm:flex-none bg-white text-red-600 border border-red-200 hover:bg-red-50 px-4 py-2 rounded-xl text-sm font-bold transition">Reddet</button>
+              </div>
+            ) : (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button onClick={handleCancelOffer} className="flex-1 sm:flex-none bg-white text-gray-600 border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-xl text-sm font-bold transition">Teklifi İptal Et</button>
               </div>
             )}
           </div>
@@ -220,9 +231,14 @@ export default function Conversation() {
               <p className="text-emerald-700 text-xs mt-1">Teklif kabul edildi! İşlemi bu fiyattan başlatabilirsiniz.</p>
             </div>
             {currentUser === conversation?.buyer_id && (
-              <Link to={`/listing/${conversation?.listing_id}?offer_id=${offer.id}`} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition text-center text-nowrap">
-                Turtle Güvence ile Al
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                <Link to={`/listing/${conversation?.listing_id}?offer_id=${offer.id}`} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition text-center shadow-md shadow-emerald-200">
+                  Teklifiniz Kabul Edildi! Satın Almak İçin Dokunun (TurtleGüvence)
+                </Link>
+                <button onClick={() => sendMessage('Satın alma işlemini elden teslim olarak yapmak istiyorum. Nerede buluşabiliriz?')} className="w-full sm:w-auto bg-white border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-50 transition text-center">
+                  Veya Standart Satın Al (Elden Teslim)
+                </button>
+              </div>
             )}
           </div>
         )}

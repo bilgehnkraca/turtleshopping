@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../layouts/AdminLayout';
-import { TrendingUp, Users, ShoppingBag, DollarSign } from 'lucide-react';
+import { TrendingUp, Users, ShoppingBag, DollarSign, ShieldCheck, Check, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
@@ -35,15 +35,12 @@ export default function AdminDashboard() {
     revenue: 0,
   });
 
+  const [applications, setApplications] = useState<any[]>([]);
+
   useEffect(() => {
     async function fetchStats() {
-      // Users count
       const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-      
-      // Listings count
       const { count: listingsCount } = await supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active');
-      
-      // GMV & Revenue from transactions
       const { data: txs } = await supabase.from('transactions').select('price, commission').eq('status', 'verified');
       
       let gmv = 0;
@@ -64,8 +61,63 @@ export default function AdminDashboard() {
       });
     }
 
+    async function fetchApplications() {
+      const { data: apps } = await supabase.from('point_applications').select('*').eq('status', 'pending');
+      if (apps) setApplications(apps);
+    }
+
     fetchStats();
+    fetchApplications();
   }, []);
+
+  const handleApprove = async (app: any) => {
+    try {
+      // 0. E-posta ile profili bul
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', app.owner_email)
+        .single();
+
+      if (profileError || !profile) {
+        alert('Bu email ile kayıtlı kullanıcı yok, başvuru sahibi önce siteye üye olmalı.');
+        return;
+      }
+
+      const profileId = profile.id;
+      // 1. Create shop_locations entry
+      const { error: shopError } = await supabase.from('shop_locations').insert({
+        profile_id: profileId,
+        shop_name: app.name,
+        city: app.city,
+        full_address: app.address,
+        is_active: true,
+        phone: app.phone,
+        email: app.owner_email
+      });
+
+      if (shopError) throw shopError;
+
+      // 2. Update profile role
+      const { error: roleError } = await supabase.from('profiles').update({ role: 'shopkeeper' }).eq('id', profileId);
+      if (roleError) throw roleError;
+
+      // 3. Mark application as approved
+      const { error: appError } = await supabase.from('point_applications').update({ status: 'approved' }).eq('id', app.id);
+      if (appError) throw appError;
+
+      setApplications(applications.filter(a => a.id !== app.id));
+      alert('Başvuru onaylandı ve esnaf kaydı oluşturuldu.');
+    } catch (error: any) {
+      alert('Hata: ' + error.message);
+    }
+  };
+
+  const handleReject = async (appId: string) => {
+    if (!confirm('Reddetmek istediğinize emin misiniz?')) return;
+    await supabase.from('point_applications').update({ status: 'rejected' }).eq('id', appId);
+    setApplications(applications.filter(a => a.id !== appId));
+  };
 
   return (
     <AdminLayout>
@@ -100,6 +152,50 @@ export default function AdminDashboard() {
             icon={ShoppingBag}
             colorClass="bg-orange-500"
           />
+        </div>
+
+        <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <ShieldCheck className="text-emerald-600" size={24} />
+            <h3 className="text-xl font-bold text-gray-800">Bekleyen Esnaf Başvuruları</h3>
+          </div>
+          
+          {applications.length === 0 ? (
+            <div className="text-gray-500 text-center py-8">Bekleyen başvuru bulunmamaktadır.</div>
+          ) : (
+            <div className="space-y-4">
+              {applications.map(app => (
+                <div key={app.id} className="border border-gray-200 rounded-xl p-6 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                  <div>
+                    <h4 className="font-bold text-lg text-gray-900">{app.name}</h4>
+                    <p className="text-gray-600 text-sm mt-1">{app.city} - {app.address}</p>
+                    <div className="flex gap-4 mt-3 text-sm text-gray-500">
+                      <span>👤 {app.owner_name}</span>
+                      <span>📞 {app.phone}</span>
+                      <span>✉️ {app.owner_email}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 min-w-[200px]">
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleApprove(app)}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1"
+                      >
+                        <Check size={16} /> Onayla
+                      </button>
+                      <button 
+                        onClick={() => handleReject(app.id)}
+                        className="flex-1 bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1"
+                      >
+                        <X size={16} /> Reddet
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">

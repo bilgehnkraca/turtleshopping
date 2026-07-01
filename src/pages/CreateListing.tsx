@@ -15,7 +15,7 @@ export default function CreateListing() {
 
   // Step 1: Category
   const [categories, setCategories] = useState<Category[]>([])
-  const [selectedParentId, setSelectedParentId] = useState<number | null>(null)
+  const [categoryPath, setCategoryPath] = useState<number[]>([])
   const [categoryId, setCategoryId] = useState<number | null>(null)
 
   // Step 2: Attributes
@@ -241,6 +241,34 @@ export default function CreateListing() {
     return options.filter(o => !o.parent_value_id || selectedVals.includes(o.parent_value_id))
   }
 
+  function handleAttributeChange(attrId: string, value: string) {
+    setSelectedAttributes(prev => {
+      const next = { ...prev, [attrId]: value }
+      
+      let changed = true;
+      while (changed) {
+         changed = false;
+         for (const attr of categoryAttributes) {
+            const currentVal = next[attr.id];
+            if (!currentVal) continue;
+
+            const options = allAttributeValues.filter(v => v.attribute_id === attr.id);
+            const hasParents = options.some(o => o.parent_value_id !== null);
+            if (!hasParents) continue;
+
+            const allSelectedVals = Object.values(next);
+            const validOptions = options.filter(o => !o.parent_value_id || allSelectedVals.includes(o.parent_value_id));
+
+            if (!validOptions.some(o => o.id === currentVal)) {
+               delete next[attr.id];
+               changed = true;
+            }
+         }
+      }
+      return next;
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -263,25 +291,25 @@ export default function CreateListing() {
           {step === 1 && (
             <div className="animate-fade-in">
               <div className="flex items-center gap-3 mb-4">
-                {selectedParentId && (
-                  <button onClick={() => setSelectedParentId(null)} className="text-gray-500 hover:text-gray-800 transition">
+                {categoryPath.length > 0 && (
+                  <button onClick={() => setCategoryPath(prev => prev.slice(0, -1))} className="text-gray-500 hover:text-gray-800 transition">
                     ←
                   </button>
                 )}
                 <h2 className="text-xl font-bold text-gray-800">
-                  {selectedParentId ? categories.find(c => c.id === selectedParentId)?.name + ' Alt Kategorileri' : 'Ne satıyorsunuz?'}
+                  {categoryPath.length > 0 ? categories.find(c => c.id === categoryPath[categoryPath.length - 1])?.name + ' Alt Kategorileri' : 'Ne satıyorsunuz?'}
                 </h2>
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {(selectedParentId 
-                  ? categories.filter(c => c.parent_id === selectedParentId)
+                {(categoryPath.length > 0 
+                  ? categories.filter(c => c.parent_id === categoryPath[categoryPath.length - 1])
                   : categories.filter(c => !c.parent_id)
                 ).map(c => (
                   <button key={c.id} onClick={() => {
                     const subs = categories.filter(x => x.parent_id === c.id)
                     if (subs.length > 0) {
-                      setSelectedParentId(c.id)
+                      setCategoryPath(prev => [...prev, c.id])
                       setCategoryId(null)
                     } else {
                       setCategoryId(c.id)
@@ -290,7 +318,7 @@ export default function CreateListing() {
                     className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition ${
                       categoryId === c.id ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50 text-gray-700'
                     }`}>
-                    <span className="text-3xl mb-2">{c.icon || (selectedParentId ? '↳' : '📦')}</span>
+                    <span className="text-3xl mb-2">{c.icon || (categoryPath.length > 0 ? '↳' : '📦')}</span>
                     <span className="font-semibold text-sm">{c.name}</span>
                   </button>
                 ))}
@@ -313,7 +341,7 @@ export default function CreateListing() {
                       {attr.type === 'select' ? (
                         <select 
                           value={selectedAttributes[attr.id] || ''} 
-                          onChange={e => setSelectedAttributes(prev => ({ ...prev, [attr.id]: e.target.value }))}
+                          onChange={e => handleAttributeChange(attr.id, e.target.value)}
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 bg-white text-sm"
                         >
                           <option value="">Seçiniz...</option>
@@ -325,7 +353,7 @@ export default function CreateListing() {
                         <input 
                           type={attr.type === 'number' ? 'number' : 'text'}
                           value={selectedAttributes[attr.id] || ''}
-                          onChange={e => setSelectedAttributes(prev => ({ ...prev, [attr.id]: e.target.value }))}
+                          onChange={e => handleAttributeChange(attr.id, e.target.value)}
                           className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 text-sm"
                         />
                       )}

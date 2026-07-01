@@ -9,7 +9,7 @@ export default function TurtlePoints() {
 
   async function fetchPoints() {
     let query = supabase
-      .from('turtle_points')
+      .from('shop_locations')
       .select('*')
       .eq('is_active', true)
       .order('city')
@@ -89,8 +89,8 @@ export default function TurtlePoints() {
                     🏪
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-800">{point.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">📍 {point.address}, {point.city}</p>
+                    <h3 className="font-bold text-gray-800">{point.shop_name}</h3>
+                    <p className="text-sm text-gray-500 mt-1">📍 {point.full_address}, {point.city}</p>
                     {point.phone && <p className="text-sm text-gray-500">📞 {point.phone}</p>}
                   </div>
                   <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-1 rounded-full">Aktif</span>

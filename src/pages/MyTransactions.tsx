@@ -56,6 +56,28 @@ export default function MyTransactions() {
     }
   };
 
+  const getTimelineSteps = (status: string) => {
+    // A simple linear flow of standard transaction statuses
+    const flow = [
+      { id: 'pending', label: 'Satıcı Teslimatı' },
+      { id: 'dropped_off_at_seller_shop', label: 'Esnaf İncelemesi' },
+      { id: 'report_created', label: 'Rapor & Ödeme' },
+      { id: 'in_transit', label: 'Kargoda' },
+      { id: 'arrived_at_buyer_shop', label: 'Teslim Noktasında' },
+      { id: 'verified', label: 'Tamamlandı' }
+    ];
+    
+    let currentIdx = flow.findIndex(s => s.id === status);
+    // Maps aliases
+    if (status === 'report_approved') currentIdx = flow.findIndex(s => s.id === 'in_transit') - 0.5; // halfway between report & transit
+
+    return flow.map((step, idx) => ({
+      ...step,
+      completed: currentIdx >= idx,
+      current: Math.floor(currentIdx) === idx || (currentIdx === -1 && status !== 'cancelled' && status !== 'return_to_seller_pending' && status !== 'returned_to_seller' && idx === 0)
+    }));
+  };
+
   const openReport = (tx: any) => {
     if (tx.device_reports && tx.device_reports.length > 0) {
       setActiveReport(tx.device_reports[0]);
@@ -151,10 +173,31 @@ export default function MyTransactions() {
                   </div>
 
                   {/* Durum ve Kodlar */}
-                  <div className="flex-1 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
-                    <div className="mb-4">
+                  <div className="flex-1 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 flex flex-col">
+                    <div className="mb-4 flex justify-between items-start">
                       {getStatusBadge(tx.status)}
                     </div>
+                    
+                    {/* Visual Timeline */}
+                    {['cancelled', 'return_to_seller_pending', 'returned_to_seller'].includes(tx.status) ? (
+                       <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl text-red-800 text-sm font-semibold flex items-center gap-2">
+                         <AlertCircle size={18} /> İşlem iptal edildi veya iade sürecinde.
+                       </div>
+                    ) : (
+                      <div className="relative mb-6 mt-2 hidden sm:block">
+                        <div className="overflow-hidden">
+                          <div className="flex items-center justify-between w-full relative before:absolute before:inset-0 before:top-1/2 before:h-0.5 before:-translate-y-1/2 before:bg-gray-200 before:z-0">
+                            {getTimelineSteps(tx.status).map((step, idx) => (
+                              <div key={idx} className="relative z-10 flex flex-col items-center">
+                                <div className={`w-4 h-4 rounded-full border-2 bg-white ${step.completed ? 'border-emerald-500 bg-emerald-500' : (step.current ? 'border-emerald-500' : 'border-gray-300')}`}></div>
+                                <span className={`text-[10px] mt-1 font-bold absolute top-5 w-20 text-center -ml-10 left-1/2 ${step.current ? 'text-emerald-700' : (step.completed ? 'text-gray-700' : 'text-gray-400')}`}>{step.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="h-6"></div> {/* spacer for labels */}
+                      </div>
+                    )}
                     
                     {/* Alıcıya ve Satıcıya Göre Farklı Mesajlar / Kodlar */}
                     {isBuyer ? (

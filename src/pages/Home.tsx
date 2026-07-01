@@ -19,10 +19,38 @@ export default function Home() {
   const [sortBy, setSortBy] = useState('newest')
   const [categories, setCategories] = useState<any[]>([])
 
+  // Dynamic Filters EAV
+  const [categoryAttributes, setCategoryAttributes] = useState<any[]>([])
+  const [attributeValues, setAttributeValues] = useState<any[]>([])
+  const [selectedDynamicFilters, setSelectedDynamicFilters] = useState<Record<string, string>>({})
+
   useEffect(() => {
     fetchListings()
     supabase.from('categories').select('*').then(({ data }) => setCategories(data || []))
-  }, [search, selectedCategory, selectedCity, minPrice, maxPrice, condition, sortBy, user])
+  }, [search, selectedCategory, selectedCity, minPrice, maxPrice, condition, sortBy, user, selectedDynamicFilters])
+
+  // Fetch Category Attributes when a specific category is selected
+  useEffect(() => {
+    setSelectedDynamicFilters({})
+    if (selectedCategory) {
+      const fetchAttrs = async () => {
+        const { data: attrs } = await supabase.from('category_attributes').select('*').eq('category_id', parseInt(selectedCategory)).order('order', { ascending: true })
+        if (attrs && attrs.length > 0) {
+          setCategoryAttributes(attrs)
+          const attrIds = attrs.map((a: any) => a.id)
+          const { data: vals } = await supabase.from('attribute_values').select('*').in('attribute_id', attrIds).order('order', { ascending: true })
+          setAttributeValues(vals || [])
+        } else {
+          setCategoryAttributes([])
+          setAttributeValues([])
+        }
+      }
+      fetchAttrs()
+    } else {
+      setCategoryAttributes([])
+      setAttributeValues([])
+    }
+  }, [selectedCategory])
 
   async function fetchListings() {
     setLoading(true)
@@ -42,6 +70,21 @@ export default function Home() {
     if (minPrice) query = query.gte('price', minPrice)
     if (maxPrice) query = query.lte('price', maxPrice)
     if (condition) query = query.eq('condition', condition)
+
+    // EAV Dynamic Filters check
+    const filterValues = Object.values(selectedDynamicFilters).filter(Boolean).map(v => parseInt(v))
+    if (filterValues.length > 0) {
+      const { data: matchingIds } = await supabase.rpc('get_listings_by_attributes', {
+        p_value_ids: filterValues
+      })
+      if (matchingIds && matchingIds.length > 0) {
+        const ids = matchingIds.map((row: any) => row.listing_id)
+        query = query.in('id', ids)
+      } else {
+        // If filters matched nothing, make query return nothing
+        query = query.eq('id', '00000000-0000-0000-0000-000000000000')
+      }
+    }
 
     if (sortBy === 'newest') query = query.order('created_at', { ascending: false })
     if (sortBy === 'price_asc') query = query.order('price', { ascending: true })
@@ -150,11 +193,58 @@ export default function Home() {
                 </select>
               </div>
 
-              <button onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedCity(''); setMinPrice(''); setMaxPrice(''); setCondition(''); setSortBy('newest') }}
+              <button onClick={() => { setSearch(''); setSelectedCategory(''); setSelectedCity(''); setMinPrice(''); setMaxPrice(''); setCondition(''); setSortBy('newest'); setSelectedDynamicFilters({}); }}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50 px-4 py-2.5 rounded-xl text-sm font-bold transition w-full md:w-auto">
                 Aramayı Temizle ✕
               </button>
             </div>
+
+            {/* Dynamic Attributes Row */}
+            {categoryAttributes.length > 0 && (
+              <div className="flex flex-wrap gap-4 items-center pt-4 mt-4 border-t border-gray-50">
+                {categoryAttributes.map(attr => {
+                  if (attr.type !== 'select') return null; // Only support select for filtering for now
+                  const options = attributeValues.filter(v => v.attribute_id === attr.id);
+                  if (options.length === 0) return null;
+                  
+                  // Handle dependent filters (e.g. Model depends on Marka)
+                  const hasParents = options.some(o => o.parent_value_id !== null);
+                  let validOptions = options;
+                  if (hasParents) {
+                     const selectedVals = Object.values(selectedDynamicFilters);
+                     validOptions = options.filter(o => !o.parent_value_id || selectedVals.includes(String(o.parent_value_id)));
+                  }
+
+                  return (
+                    <select key={attr.id} value={selectedDynamicFilters[attr.id] || ''}
+                      onChange={e => {
+                         const val = e.target.value;
+                         setSelectedDynamicFilters((prev: Record<string, string>) => {
+                            const next: Record<string, string> = { ...prev, [attr.id]: val };
+                            if (!val) delete next[attr.id];
+                            // Reset dependents if parent changes
+                            for (const a of categoryAttributes) {
+                                if (next[a.id]) {
+                                    const currentValObj = attributeValues.find(v => String(v.id) === next[a.id]);
+                                    if (currentValObj && currentValObj.parent_value_id && !Object.values(next).includes(String(currentValObj.parent_value_id))) {
+                                        delete next[a.id];
+                                    }
+                                }
+                            }
+                            return next;
+                         });
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-gray-50 border-none ring-1 ring-emerald-100 focus:ring-2 focus:ring-emerald-500 text-sm font-medium text-emerald-800 transition cursor-pointer min-w-[120px]"
+                    >
+                      <option value="">{attr.name} (Tümü)</option>
+                      {validOptions.map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.value}</option>
+                      ))}
+                    </select>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

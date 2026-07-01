@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Store, MapPin, Bell, MessageSquare, Heart, User as UserIcon, LogOut, PlusCircle, ShieldCheck, Menu, X } from 'lucide-react'
+import { Store, MapPin, Bell, MessageSquare, Heart, User as UserIcon, LogOut, PlusCircle, ShieldCheck, Menu, X, Package } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
 export function Navbar() {
-  const { user, signOut, isPointOwner, isShopkeeper } = useAuth()
+  const { user, signOut, isShopkeeper } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -84,11 +84,7 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
-              {isPointOwner && (
-                <Link to="/point-panel" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                  <Store className="w-4 h-4" /> Nokta (Eski)
-                </Link>
-              )}
+
               {isShopkeeper && (
                 <Link to="/esnaf/dashboard" className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full text-sm font-bold transition">
                   <Store className="w-4 h-4" /> Esnaf Paneli
@@ -118,6 +114,9 @@ export function Navbar() {
               </Link>
               <Link to="/transactions" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
                 <ShieldCheck className="w-4 h-4" /> İşlemlerim
+              </Link>
+              <Link to="/my-listings" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
+                <Package className="w-4 h-4" /> İlanlarım
               </Link>
               <Link to="/favorites" className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 text-sm font-medium transition">
                 <Heart className="w-4 h-4" /> Favoriler
@@ -165,11 +164,7 @@ export function Navbar() {
             </Link>
             {user ? (
               <>
-                {isPointOwner && (
-                  <Link to="/point-panel" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
-                    <Store className="w-5 h-5" /> Nokta (Eski)
-                  </Link>
-                )}
+
                 {isShopkeeper && (
                   <Link to="/esnaf/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 p-2 rounded-lg">
                     <Store className="w-5 h-5" /> Esnaf Paneli
@@ -188,6 +183,9 @@ export function Navbar() {
                 </Link>
                 <Link to="/transactions" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
                   <ShieldCheck className="w-5 h-5" /> İşlemlerim
+                </Link>
+                <Link to="/my-listings" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
+                  <Package className="w-5 h-5" /> İlanlarım
                 </Link>
                 <Link to="/favorites" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 text-gray-600 font-medium">
                   <Heart className="w-5 h-5" /> Favoriler

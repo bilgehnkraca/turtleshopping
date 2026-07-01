@@ -1,0 +1,72 @@
+--- web/src/pages/ListingDetail.tsx
++++ web/src/pages/ListingDetail.tsx
+@@ -33,7 +33,6 @@
+   const [messageContent, setMessageContent] = useState('')
+-  const [turtlePoints, setTurtlePoints] = useState<any[]>([])
+   const [shops, setShops] = useState<any[]>([])
+   const [selectedPoint, setSelectedPoint] = useState('')
+   const [selectedShop, setSelectedShop] = useState('')
+@@ -80,11 +79,12 @@
+     if (data) {
+       await supabase.from('listings').update({ view_count: (data.view_count || 0) + 1 }).eq('id', id)
+-      if (data.verification_id) {
++      if (data.verified) {
+         const { data: vData } = await supabase
+-          .from('listing_verifications')
+-          .select('*, turtle_points(name, city)')
+-          .eq('id', data.verification_id)
+-          .single()
++          .from('listing_precheck_requests')
++          .select('*, shop_locations(shop_name, city)')
++          .eq('listing_id', data.id)
++          .eq('status', 'completed')
++          .order('created_at', { ascending: false })
++          .limit(1)
++          .maybeSingle()
+         setVerification(vData)
+       }
+@@ -145,2 -145,1 @@
+-    supabase.from('turtle_points').select('*').eq('is_active', true).then(({ data }) => setTurtlePoints(data || []))
+     supabase.from('shop_locations').select('*').eq('is_active', true).then(({ data }) => setShops(data || []))
+@@ -193,12 +192,8 @@
+     const { data: vData } = await supabase
+-      .from('listing_verifications')
+-      .insert({
+-        listing_id: id,
+-        point_id: parseInt(selectedPoint),
+-        status: 'pending',
+-      })
+-      .select()
+-      .single()
++      .rpc('create_listing_precheck', { p_listing_id: id })
+ 
+     if (vData) {
+-      await supabase.from('listings').update({ verification_id: vData.id }).eq('id', id)
++      const { data: precheckData } = await supabase.from('listing_precheck_requests').select('*').eq('id', vData).single();
+-      setVerification(vData)
++      setVerification(precheckData)
+       setShowVerifyModal(false)
+       await supabase.functions.invoke('notify-turtle-point', {
+@@ -439,3 +434,3 @@
+                   <span className="text-gray-900 font-medium">
+-                    {verification?.turtle_points?.name} - {verification?.turtle_points?.city}
++                    {verification?.shop_locations?.shop_name} - {verification?.shop_locations?.city}
+                   </span>
+@@ -651,6 +646,6 @@
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto">
+-              {turtlePoints.map(p => (
++              {shops.map(p => (
+                 <button 
+                   key={p.id}
+-                  onClick={() => setSelectedPoint(p.id.toString())}
+-                  className={`p-4 border rounded-xl flex items-start gap-3 text-left transition ${selectedPoint === p.id.toString() ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-emerald-200'}`}
++                  onClick={() => setSelectedPoint(p.id)}
++                  className={`p-4 border rounded-xl flex items-start gap-3 text-left transition ${selectedPoint === p.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-emerald-200'}`}
+                 >
+@@ -660,4 +655,4 @@
+                   <div>
+-                    <div className="font-medium text-gray-900">{p.name}</div>
+-                    <div className="text-xs text-gray-500 mt-1">{p.city}</div>
++                    <div className="font-medium text-gray-900">{p.shop_name}</div>
++                    <div className="text-xs text-gray-500 mt-1">{p.city} - {p.full_address}</div>
+                   </div>

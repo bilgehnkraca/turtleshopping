@@ -25,6 +25,11 @@ export default function EditListing() {
   const [neighborhood, setNeighborhood] = useState('')
   const [status, setStatus] = useState('active')
 
+  // EAV Attributes
+  const [categoryAttributes, setCategoryAttributes] = useState<any[]>([])
+  const [allAttributeValues, setAllAttributeValues] = useState<any[]>([])
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({})
+
   // Location arrays
   const [districts, setDistricts] = useState<any[]>([])
   const [neighborhoods, setNeighborhoods] = useState<any[]>([])
@@ -58,6 +63,17 @@ export default function EditListing() {
     setDistrict(data.district || '')
     setNeighborhood(data.neighborhood || '')
     setStatus(data.status)
+
+    // Fetch existing attributes
+    const { data: listingAttrs } = await supabase.from('listing_attributes').select('*').eq('listing_id', id)
+    if (listingAttrs) {
+        const initialSelected: Record<string, string> = {}
+        listingAttrs.forEach((attr: any) => {
+            initialSelected[attr.attribute_id] = attr.value_id ? String(attr.value_id) : attr.custom_value
+        })
+        setSelectedAttributes(initialSelected)
+    }
+
     setLoading(false)
   }
 
@@ -86,6 +102,62 @@ export default function EditListing() {
     }
   }, [district, districts])
 
+  // Fetch Attributes when Category selected
+  useEffect(() => {
+    if (categoryId) {
+      const fetchAttrs = async () => {
+        const { data: attrs } = await supabase.from('category_attributes')
+          .select('*').eq('category_id', parseInt(categoryId)).order('order', { ascending: true })
+        
+        if (attrs && attrs.length > 0) {
+          setCategoryAttributes(attrs)
+          const attrIds = attrs.map((a: any) => a.id)
+          const { data: vals } = await supabase.from('attribute_values')
+            .select('*').in('attribute_id', attrIds).order('order', { ascending: true })
+          if (vals) setAllAttributeValues(vals)
+        } else {
+          setCategoryAttributes([])
+          setAllAttributeValues([])
+        }
+      }
+      fetchAttrs()
+    }
+  }, [categoryId])
+
+  // Dependent attributes logic
+  function getOptionsForAttribute(attr: any) {
+    const options = allAttributeValues.filter(v => v.attribute_id === attr.id)
+    const hasParents = options.some(o => o.parent_value_id !== null)
+    if (!hasParents) return options
+
+    const selectedVals = Object.values(selectedAttributes)
+    return options.filter(o => !o.parent_value_id || selectedVals.includes(String(o.parent_value_id)))
+  }
+
+  function handleAttributeChange(attrId: string, value: string) {
+    setSelectedAttributes(prev => {
+      const next = { ...prev, [attrId]: value }
+      let changed = true;
+      while (changed) {
+         changed = false;
+         for (const a of categoryAttributes) {
+            if (next[a.id]) {
+                const options = allAttributeValues.filter(v => v.attribute_id === a.id);
+                const hasParents = options.some(o => o.parent_value_id !== null);
+                if (hasParents) {
+                    const currentValObj = allAttributeValues.find(v => String(v.id) === next[a.id]);
+                    if (currentValObj && currentValObj.parent_value_id && !Object.values(next).includes(String(currentValObj.parent_value_id))) {
+                        delete next[a.id];
+                        changed = true;
+                    }
+                }
+            }
+         }
+      }
+      return next
+    })
+  }
+
   async function handleSave() {
     setSaving(true)
     setError('')
@@ -103,8 +175,31 @@ export default function EditListing() {
       updated_at: new Date().toISOString(),
     }).eq('id', id)
 
-    if (error) setError(error.message)
-    else navigate(`/listing/${id}`)
+    if (error) {
+        setError(error.message)
+        setSaving(false)
+        return
+    }
+
+    // Save attributes
+    await supabase.from('listing_attributes').delete().eq('listing_id', id)
+    
+    const attrInserts = Object.keys(selectedAttributes).map(attrId => {
+      const attrDef = categoryAttributes.find(a => String(a.id) === attrId)
+      const val = selectedAttributes[attrId]
+      return {
+        listing_id: id,
+        attribute_id: parseInt(attrId),
+        value_id: attrDef?.type === 'select' ? parseInt(val) : null,
+        custom_value: attrDef?.type !== 'select' ? val : null,
+      }
+    }).filter(a => a.value_id || a.custom_value)
+
+    if (attrInserts.length > 0) {
+      await supabase.from('listing_attributes').insert(attrInserts)
+    }
+
+    navigate(`/listing/${id}`)
     setSaving(false)
   }
 
@@ -152,7 +247,7 @@ export default function EditListing() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-            <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
+            <select value={categoryId} onChange={e => { setCategoryId(e.target.value); setSelectedAttributes({}); }}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
               <option value="">Seç</option>
               {categories.map(c => (
@@ -160,6 +255,47 @@ export default function EditListing() {
               ))}
             </select>
           </div>
+
+          {categoryAttributes.length > 0 && (
+            <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col gap-4">
+              <h3 className="font-bold text-gray-800 border-b border-gray-200 pb-2">Ürün Özellikleri</h3>
+              {categoryAttributes.map(attr => (
+                <div key={attr.id}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {attr.name} {attr.is_required && <span className="text-red-500">*</span>}
+                  </label>
+                  {attr.type === 'select' ? (
+                    <select
+                      value={selectedAttributes[attr.id] || ''}
+                      onChange={e => handleAttributeChange(String(attr.id), e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    >
+                      <option value="">Seçiniz...</option>
+                      {getOptionsForAttribute(attr).map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.value}</option>
+                      ))}
+                    </select>
+                  ) : attr.type === 'number' ? (
+                    <input
+                      type="number"
+                      value={selectedAttributes[attr.id] || ''}
+                      onChange={e => handleAttributeChange(String(attr.id), e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                      placeholder={attr.name}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={selectedAttributes[attr.id] || ''}
+                      onChange={e => handleAttributeChange(String(attr.id), e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                      placeholder={attr.name}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ürün Durumu</label>

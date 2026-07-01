@@ -15,14 +15,36 @@ export default function Messages() {
       .select('*, listings(title, price, images), buyer:profiles!conversations_buyer_id_fkey(id, username, full_name), seller:profiles!conversations_seller_id_fkey(id, username, full_name)')
       .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
       .order('created_at', { ascending: false })
-    setConversations(data || [])
+      
+    if (data) {
+      const visible = data.filter(conv => {
+        const isBuyer = conv.buyer_id === userId
+        if (isBuyer && conv.buyer_hidden) return false
+        if (!isBuyer && conv.seller_hidden) return false
+        return true
+      })
+      setConversations(visible)
+    } else {
+      setConversations([])
+    }
     setLoading(false)
   }
 
   async function handleDelete(e: any, convId: string) {
     e.preventDefault()
     if (!confirm('Bu konuşmayı silmek istediğinize emin misiniz?')) return
-    const { error } = await supabase.from('conversations').delete().eq('id', convId)
+
+    const conv = conversations.find(c => c.id === convId)
+    if (!conv || !currentUser) return
+
+    const isBuyer = conv.buyer_id === currentUser
+    const hideColumn = isBuyer ? 'buyer_hidden' : 'seller_hidden'
+
+    const { error } = await supabase
+      .from('conversations')
+      .update({ [hideColumn]: true })
+      .eq('id', convId)
+
     if (error) {
       alert('Silinemedi: ' + error.message)
     } else {

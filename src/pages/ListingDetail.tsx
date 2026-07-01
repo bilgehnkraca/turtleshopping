@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Listing } from '../types'
-import { ShieldCheck, X } from 'lucide-react'
+import { ShieldCheck, X, MapPin } from 'lucide-react'
 import { Navbar } from '../components/Navbar'
 
 const conditionLabels: Record<string, string> = {
@@ -26,12 +26,14 @@ export default function ListingDetail() {
   const [searchParams] = useSearchParams()
   const [listing, setListing] = useState<Listing | null>(null)
   const [acceptedOfferPrice, setAcceptedOfferPrice] = useState<number | null>(null)
+  const [acceptedOfferId, setAcceptedOfferId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<string | null>(null)
+  const [shops, setShops] = useState<any[]>([])
+  const [selectedPoint, setSelectedPoint] = useState('')
+  const [selectedShop, setSelectedShop] = useState('')
   const [isFavorited, setIsFavorited] = useState(false)
   const [verification, setVerification] = useState<any>(null)
-  const [turtlePoints, setTurtlePoints] = useState<any[]>([])
-  const [selectedPoint, setSelectedPoint] = useState('')
   const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [verifyLoading, setVerifyLoading] = useState(false)
   const [activeImage, setActiveImage] = useState(0)
@@ -50,8 +52,6 @@ export default function ListingDetail() {
 
   // Satın Alma (Escrow) State
   const [showBuyModal, setShowBuyModal] = useState(false)
-  const [shops, setShops] = useState<any[]>([])
-  const [selectedShop, setSelectedShop] = useState('')
   const [buyLoading, setBuyLoading] = useState(false)
 
   async function fetchSimilarListings(categoryId: number, currentId: string) {
@@ -77,12 +77,15 @@ export default function ListingDetail() {
 
     if (data) {
       await supabase.from('listings').update({ view_count: (data.view_count || 0) + 1 }).eq('id', id)
-      if (data.verification_id) {
+      if (data.verified) {
         const { data: vData } = await supabase
-          .from('listing_verifications')
-          .select('*, turtle_points(name, city)')
-          .eq('id', data.verification_id)
-          .single()
+          .from('listing_precheck_requests')
+          .select('*, shop_locations(shop_name, city)')
+          .eq('listing_id', data.id)
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
         setVerification(vData)
       }
       console.log('category_id:', data.category_id, 'id:', data.id)
@@ -107,12 +110,28 @@ export default function ListingDetail() {
         const { data } = await supabase.from('offers').select('amount, status').eq('id', offerId).single()
         if (data && data.status === 'accepted') {
           setAcceptedOfferPrice(data.amount)
+          setAcceptedOfferId(offerId)
+        }
+      } else if (currentUser) {
+        const { data } = await supabase.from('offers')
+          .select('id, amount, status')
+          .eq('listing_id', id)
+          .eq('buyer_id', currentUser)
+          .eq('status', 'accepted')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (data) {
+          setAcceptedOfferPrice(data.amount)
+          setAcceptedOfferId(data.id)
         }
       }
     }
 
     fetchListing()
-    fetchOffer()
+    if (currentUser) {
+      fetchOffer()
+    }
     
     supabase.from('listing_attributes')
       .select('*, category_attributes(name), attribute_values(value)')
@@ -126,9 +145,8 @@ export default function ListingDetail() {
       setCurrentUser(userId)
       if (userId) checkFavorite(userId)
     })
-    supabase.from('turtle_points').select('*').eq('is_active', true).then(({ data }) => setTurtlePoints(data || []))
     supabase.from('shop_locations').select('*').eq('is_active', true).then(({ data }) => setShops(data || []))
-  }, [id, searchParams])
+  }, [id, searchParams, currentUser])
 
   async function toggleFavorite() {
     if (!currentUser) { navigate('/login'); return }
@@ -174,22 +192,22 @@ export default function ListingDetail() {
     if (!selectedPoint) return
     setVerifyLoading(true)
 
-    const { data: vData } = await supabase
-      .from('listing_verifications')
-      .insert({
-        listing_id: id,
-        point_id: parseInt(selectedPoint),
-        status: 'pending',
-      })
-      .select()
-      .single()
+    const { data: vData, error } = await supabase
+      .rpc('create_listing_precheck', { p_listing_id: id })
+
+    if (error) {
+      console.error(error)
+      alert('Doğrulama isteği oluşturulurken bir hata oluştu: ' + error.message)
+      setVerifyLoading(false)
+      return
+    }
 
     if (vData) {
-      await supabase.from('listings').update({ verification_id: vData.id }).eq('id', id)
-      setVerification(vData)
+      const { data: precheckData } = await supabase.from('listing_precheck_requests').select('*').eq('id', vData).single();
+      setVerification(precheckData)
       setShowVerifyModal(false)
       await supabase.functions.invoke('notify-turtle-point', {
-        body: { verification_id: vData.id }
+        body: { precheck_id: vData }
       })
     }
     setVerifyLoading(false)
@@ -264,7 +282,7 @@ export default function ListingDetail() {
 
     setBuyLoading(true)
     try {
-      const offerId = searchParams.get('offer_id') || null;
+      const offerId = acceptedOfferId || searchParams.get('offer_id') || null;
 
       const { error } = await supabase.rpc('create_secure_transaction', {
         p_listing_id: id,
@@ -419,9 +437,12 @@ export default function ListingDetail() {
                 <span className="text-amber-500 text-xl">⏳</span>
                 <div>
                   <p className="text-amber-700 font-semibold text-sm">Doğrulama Bekliyor</p>
-                  <p className="text-amber-600 text-xs">
-                    {verification?.turtle_points?.name} - {verification?.turtle_points?.city}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MapPin size={16} className="text-gray-400" />
+                    <span className="text-gray-900 font-medium text-xs">
+                      {verification?.shop_locations?.shop_name} - {verification?.shop_locations?.city}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -520,13 +541,32 @@ export default function ListingDetail() {
 
             {!isOwner && (
               <>
+                {listing.status === 'reserved' && (
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center shadow-sm mb-4">
+                    <p className="text-amber-800 font-bold mb-1 text-lg">Bir Başkasıyla İşlemde 🐢</p>
+                    <p className="text-amber-600 text-xs">Bu ürün şu an başka bir alıcı için rezerve edilmiştir. İşlem iptal olursa tekrar yayına alınacaktır.</p>
+                  </div>
+                )}
+                
+                {listing.status === 'sold' && (
+                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-center shadow-sm mb-4">
+                    <p className="text-emerald-800 font-bold mb-1 text-lg">Yeni Sahibini Buldu 🎁</p>
+                    <p className="text-emerald-600 text-xs">Bu ürün satılmıştır. Benzer ürünlere göz atabilirsiniz.</p>
+                  </div>
+                )}
+
                 {listing.status === 'active' && (
                   <>
                     {['telefon', 'tablet', 'bilgisayar', 'televizyon', 'akilli-saat', 'kulaklik-ses', 'oyun-konsolu', 'kamera', 'kucuk-ev-aletleri', 'bilgisayar-parcalari', 'cevre-birimleri', 'elektronik'].includes(listing.categories?.slug || '') ? (
                       <>
                         <button onClick={() => setShowBuyModal(true)}
-                          className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200">
-                          {acceptedOfferPrice ? `İndirimli Al: ${acceptedOfferPrice.toLocaleString('tr-TR')} ₺` : 'Satın Al'}
+                          className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 relative overflow-hidden">
+                          {acceptedOfferPrice ? (
+                            <div className="flex flex-col items-center">
+                              <span className="text-xs font-medium text-emerald-200 bg-emerald-800 px-2 rounded mb-1">Teklifiniz Kabul Edildi!</span>
+                              <span>İndirimli Al: {acceptedOfferPrice.toLocaleString('tr-TR')} ₺</span>
+                            </div>
+                          ) : 'Satın Al'}
                         </button>
                         <div className="grid grid-cols-2 gap-3 mt-3">             
                           <button onClick={() => {
@@ -614,8 +654,8 @@ export default function ListingDetail() {
             <select value={selectedPoint} onChange={e => setSelectedPoint(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white mb-4">
               <option value="">Nokta seç...</option>
-              {turtlePoints.map(p => (
-                <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
+              {shops.map(p => (
+                <option key={p.id} value={p.id}>{p.shop_name} — {p.city}</option>
               ))}
             </select>
             <div className="flex gap-3">

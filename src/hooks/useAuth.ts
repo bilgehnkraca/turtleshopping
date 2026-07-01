@@ -6,7 +6,6 @@ import type { Profile } from '../types'
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [isPointOwner, setIsPointOwner] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,7 +24,6 @@ export function useAuth() {
       if (session?.user) fetchProfile(session.user)
       else {
         setProfile(null)
-        setIsPointOwner(false)
         setLoading(false)
       }
     })
@@ -41,14 +39,6 @@ export function useAuth() {
       .single()
     setProfile(data)
 
-    // Nokta sahibi mi kontrol et
-    const { data: point } = await supabase
-      .from('turtle_points')
-      .select('id')
-      .eq('email', user.email)
-      .eq('is_active', true)
-      .maybeSingle()
-    setIsPointOwner(!!point)
     setLoading(false)
   }
 
@@ -59,5 +49,5 @@ export function useAuth() {
   const isShopkeeper = profile?.role === 'shopkeeper';
   const isAdmin = profile?.role === 'admin';
 
-  return { user, profile, loading, signOut, isPointOwner, isShopkeeper, isAdmin }
+  return { user, profile, loading, signOut, isShopkeeper, isAdmin }
 }

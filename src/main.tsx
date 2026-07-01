@@ -11,11 +11,7 @@ import Conversation from './pages/Conversation'
 import ProfilePage from './pages/Profile'
 import Messages from './pages/Messages'
 import TurtlePoints from './pages/TurtlePoints'
-import ApplyPoint from './pages/ApplyPoint'
-import Admin from './pages/Admin'
 import EditListing from './pages/EditListing'
-import PointPanel from './pages/PointPanel'
-import ListingSubmitted from './pages/ListingSubmitted'
 import Favorites from './pages/Favorites'
 import Notifications from './pages/Notifications'
 import ResetPassword from './pages/ResetPassword'
@@ -25,6 +21,8 @@ import ShopkeeperPackages from './pages/esnaf/ShopkeeperPackages'
 import ShopkeeperPayouts from './pages/esnaf/ShopkeeperPayouts'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import MyTransactions from './pages/MyTransactions'
+import MyListings from './pages/MyListings'
+import ApplyPoint from './pages/ApplyPoint'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -45,14 +43,12 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/messages" element={<Messages />} />
         <Route path="/turtle-points" element={<TurtlePoints />} />
         <Route path="/apply-point" element={<ApplyPoint />} />
-        <Route path="/admin" element={<Admin />} />
         <Route path="/edit-listing/:id" element={<EditListing />} />
-        <Route path="/point-panel" element={<PointPanel />} />
-        <Route path="/listing-submitted" element={<ListingSubmitted />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/transactions" element={<MyTransactions />} />
+        <Route path="/my-listings" element={<MyListings />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
