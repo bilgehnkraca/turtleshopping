@@ -112,26 +112,34 @@ export function Navbar() {
                 </div>
                 Mesajlar
               </Link>
-              <Link to="/transactions" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                <ShieldCheck className="w-4 h-4" /> İşlemlerim
-              </Link>
-              <Link to="/my-listings" className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition">
-                <Package className="w-4 h-4" /> İlanlarım
-              </Link>
-              <Link to="/favorites" className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 text-sm font-medium transition">
-                <Heart className="w-4 h-4" /> Favoriler
-              </Link>
-              <Link to={`/profile/${user.id}`} className="flex items-center gap-1.5 text-gray-500 hover:text-gray-800 text-sm font-medium transition">
-                <UserIcon className="w-4 h-4" /> Profilim
-              </Link>
+              <div className="relative group py-2">
+                <button className="flex items-center gap-1.5 text-gray-500 hover:text-emerald-600 text-sm font-medium transition cursor-pointer">
+                  <UserIcon className="w-4 h-4" /> Hesabım
+                </button>
+                <div className="absolute right-0 top-[100%] w-48 bg-white rounded-xl shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 flex flex-col overflow-hidden">
+                  <Link to={`/profile/${user.id}`} className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <UserIcon className="w-4 h-4" /> Profilim
+                  </Link>
+                  <Link to="/transactions" className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" /> İşlemlerim
+                  </Link>
+                  <Link to="/my-listings" className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <Package className="w-4 h-4" /> İlanlarım
+                  </Link>
+                  <Link to="/favorites" className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100">
+                    <Heart className="w-4 h-4" /> Favoriler
+                  </Link>
+                  <button onClick={signOut} className="px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 text-left w-full transition">
+                    <LogOut className="w-4 h-4" /> Çıkış Yap
+                  </button>
+                </div>
+              </div>
+
               <Link to="/create-listing">
                 <button className="flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-600 transition shadow-sm ml-2">
                   <PlusCircle className="w-4 h-4" /> İlan Ver
                 </button>
               </Link>
-              <button onClick={signOut} className="flex items-center gap-1.5 text-gray-400 text-sm hover:text-gray-700 transition ml-2">
-                <LogOut className="w-4 h-4" /> Çıkış
-              </button>
             </>
           ) : (
             <>
