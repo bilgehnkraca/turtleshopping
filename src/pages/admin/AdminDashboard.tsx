@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import AdminLayout from '../../layouts/AdminLayout';
-import { TrendingUp, Users, ShoppingBag, DollarSign, ShieldCheck, Check, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { TrendingUp, Users, ShoppingBag, DollarSign, ShieldCheck, Check, X, Eye } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
@@ -281,6 +282,12 @@ export default function AdminDashboard() {
                         <X size={16} /> Reddet
                       </button>
                     </div>
+                    <Link 
+                      to={`/listing/${listing.id}`} 
+                      className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
+                    >
+                      <Eye size={16} /> İncele
+                    </Link>
                   </div>
                 </div>
               ))}
