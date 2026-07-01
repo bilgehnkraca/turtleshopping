@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const ShopkeeperLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const { profile, loading, isShopkeeper, isAdmin } = useAuth();
+  const { profile, loading, isShopkeeper } = useAuth();
   
   if (loading) {
     return (
@@ -15,7 +15,7 @@ const ShopkeeperLayout = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  if (!isShopkeeper && !isAdmin) {
+  if (!isShopkeeper) {
     return <Navigate to="/" replace />;
   }
   
