@@ -90,6 +90,7 @@ export default function AdminDashboard() {
         profile_id: profileId,
         shop_name: app.name,
         city: app.city,
+        district: '-', // NOT NULL constraint'e takılmamak için geçici değer
         full_address: app.address,
         is_active: true,
         phone: app.phone,
